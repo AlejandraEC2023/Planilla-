@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planilla Semanal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F4F0;
+    --surface: #FFFFFF;
+    --surface2: #EEECEA;
+    --border: #D8D5D0;
+    --border2: #C8C4BE;
+    --text: #1A1916;
+    --text2: #6B6760;
+    --text3: #9B9890;
+    --green: #1A7A5E;
+    --green-bg: #E6F5F0;
+    --blue: #1A5C8A;
+    --blue-bg: #E6EFF8;
+    --red: #8A2A1A;
+    --red-bg: #F8EBE6;
+    --accent: #1A7A5E;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo span { color: var(--accent); }
+  .semana-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .semana-label { font-size: 13px; color: var(--text2); }
+  .semana-input { padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Mono', monospace; background: var(--bg); color: var(--text); width: 120px; }
+  .semana-input:focus { outline: none; border-color: var(--accent); }
+
+  .container { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1.5rem; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px; width: fit-content; }
+  .tab { padding: 7px 18px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); border: none; background: transparent; transition: all 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--text); color: #fff; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .card-title { font-size: 14px; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+
+  .emp-block { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.75rem; background: var(--bg); }
+  .emp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .emp-name { font-size: 14px; font-weight: 600; border: none; background: transparent; color: var(--text); border-bottom: 1.5px solid var(--border); padding: 2px 4px; width: 220px; font-family: 'DM Sans', sans-serif; }
+  .emp-name:focus { outline: none; border-bottom-color: var(--accent); }
+
+  .fields { display: grid; gap: 10px; }
+  .f4 { grid-template-columns: repeat(4, 1fr); }
+  .f5 { grid-template-columns: repeat(5, 1fr); }
+  @media (max-width: 680px) { .f4, .f5 { grid-template-columns: repeat(2, 1fr); } }
+
+  .field label { font-size: 11px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .field input { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Mono', monospace; background: var(--surface); color: var(--text); }
+  .field input:focus { outline: none; border-color: var(--accent); }
+  .field-display { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Mono', monospace; background: var(--surface2); color: var(--text); font-weight: 500; min-height: 34px; }
+
+  .emp-footer { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .emp-footer-label { font-size: 12px; color: var(--text2); }
+  .emp-footer-val { font-size: 14px; font-weight: 600; font-family: 'DM Mono', monospace; }
+
+  .btn { padding: 7px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); transition: all 0.15s; }
+  .btn:hover { background: var(--surface2); }
+  .btn-del { color: var(--red); border-color: #E8C4BC; background: var(--red-bg); padding: 6px 10px; }
+  .btn-del:hover { background: #F0D0C8; }
+  .btn-add { margin-top: 4px; }
+  .btn-primary { background: var(--text); color: #fff; border-color: var(--text); }
+  .btn-primary:hover { background: #333; }
+  .btn-excel { background: var(--green-bg); color: var(--green); border-color: #A8D8C8; }
+  .btn-excel:hover { background: #C8EDE4; }
+  .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text2); padding: 7px 10px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.4px; }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 12px; }
+  td:first-child { font-family: 'DM Sans', sans-serif; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  .tfoot td { font-weight: 600; background: var(--surface2); font-family: 'DM Mono', monospace; }
+  .tfoot td:first-child { font-family: 'DM Sans', sans-serif; }
+
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
+  .metric-label { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .metric-val { font-size: 20px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--text); }
+
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+  .badge-r { background: var(--green-bg); color: var(--green); }
+  .badge-i { background: var(--blue-bg); color: var(--blue); }
+
+  .save-banner { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.875rem 1.25rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px; }
+  .save-text { font-size: 13px; color: var(--text2); }
+
+  .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem; }
+  @media (max-width: 580px) { .cmp-grid { grid-template-columns: 1fr; } }
+  .cmp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+  .cmp-card.highlight { border-color: var(--accent); }
+  .cmp-week-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .cmp-week-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 1rem; }
+  .cmp-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .cmp-row:last-child { border-bottom: none; font-weight: 600; font-size: 14px; }
+  .cmp-row-label { color: var(--text2); }
+  .cmp-row-val { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; }
+  .cmp-row:last-child .cmp-row-val { font-size: 15px; }
+
+  .delta { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
+  .delta-up { background: var(--green-bg); color: var(--green); }
+  .delta-down { background: var(--red-bg); color: var(--red); }
+  .delta-flat { background: var(--surface2); color: var(--text2); }
+
+  .bar-wrap { margin-bottom: 1rem; }
+  .bar-title { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .bar-row { margin-bottom: 6px; }
+  .bar-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+  .bar-meta span:last-child { font-family: 'DM Mono', monospace; font-weight: 500; }
+  .bar-track { height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .bar-actual { background: var(--green); }
+  .bar-anterior { background: var(--blue); }
+
+  .empty-state { text-align: center; padding: 2.5rem; color: var(--text3); font-size: 13px; }
+  .empty-state svg { display: block; margin: 0 auto 0.75rem; opacity: 0.3; }
+
+  .hint { font-size: 12px; color: var(--text3); margin-bottom: 0.875rem; }
+  .text-green { color: var(--green); }
+  .text-red { color: var(--red); }
+  .text-muted { color: var(--text2); }
+  .mono { font-family: 'DM Mono', monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Planilla <span>Semanal</span></div>
+  <div class="semana-header">
+    <span class="semana-label">Del</span>
+    <input class="semana-input" type="text" id="semana-inicio" placeholder="dd/mm/aaaa">
+    <span class="semana-label">al</span>
+    <input class="semana-input" type="text" id="semana-fin" placeholder="dd/mm/aaaa">
+  </div>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('retoque')">✦ Retoque</button>
+    <button class="tab" onclick="showTab('inst')">⚙ Instaladores</button>
+    <button class="tab" onclick="showTab('resumen')">◈ Resumen</button>
+    <button class="tab" onclick="showTab('comp')">⇄ Comparativo</button>
+  </div>
+
+  <!-- RETOQUE -->
+  <div class="section active" id="sec-retoque">
+    <div class="card">
+      <div class="card-title">Personal de retoque <span class="badge badge-r">Pago por día</span></div>
+      <p class="hint">Registra días trabajados, tarifa diaria y cualquier extra (bonos, horas adicionales).</p>
+      <div id="retoque-rows"></div>
+      <button class="btn btn-add" onclick="addRetoque()">+ Agregar empleado</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Resumen retoque</div>
+      <table>
+        <thead><tr><th>Nombre</th><th>Días</th><th>Q / día</th><th>Subtotal</th><th>Extras</th><th>Total</th></tr></thead>
+        <tbody id="tbody-retoque"><tr><td colspan="6"><div class="empty-state">Sin empleados aún</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INSTALADORES -->
+  <div class="section" id="sec-inst">
+    <div class="card">
+      <div class="card-title">Instaladores <span class="badge badge-i">Pago por trato</span></div>
+      <p class="hint">Registra tratos completados, valor por trato, anticipos y descuentos a restar.</p>
+      <div id="inst-rows"></div>
+      <button class="btn btn-add" onclick="addInst()">+ Agregar instalador</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Resumen instaladores</div>
+      <table>
+        <thead><tr><th>Nombre</th><th>Tratos</th><th>Q / trato</th><th>Subtotal</th><th>Anticipo</th><th>Desc.</th><th>A pagar</th></tr></thead>
+        <tbody id="tbody-inst"><tr><td colspan="7"><div class="empty-state">Sin instaladores aún</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="section" id="sec-resumen">
+    <div class="save-banner">
+      <span class="save-text">💾 Guarda la semana para poder comparar con la siguiente.</span>
+      <button class="btn btn-primary" onclick="guardarSemana()">Guardar semana actual</button>
+    </div>
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-label">Total retoque</div><div class="metric-val" id="m-retoque">Q 0</div></div>
+      <div class="metric"><div class="metric-label">Total instaladores</div><div class="metric-val" id="m-inst">Q 0</div></div>
+      <div class="metric"><div class="metric-label">Desc. / anticipos</div><div class="metric-val" id="m-desc">Q 0</div></div>
+      <div class="metric"><div class="metric-label">Total a pagar</div><div class="metric-val" id="m-total">Q 0</div></div>
+      <div class="metric"><div class="metric-label">Empleados</div><div class="metric-val" id="m-emp">0</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Detalle completo</div>
+      <table>
+        <thead><tr><th>Nombre</th><th>Tipo</th><th>Bruto</th><th>Ajustes</th><th>A pagar</th></tr></thead>
+        <tbody id="tbody-full"><tr><td colspan="5"><div class="empty-state">Sin datos aún</div></td></tr></tbody>
+      </table>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-excel" onclick="exportarExcel()">⬇ Descargar Excel</button>
+      <button class="btn" onclick="exportarTxt()">⬇ Exportar .txt</button>
+    </div>
+  </div>
+
+  <!-- COMPARATIVO -->
+  <div class="section" id="sec-comp">
+    <div id="comp-content"></div>
+  </div>
+</div>
+
+<script>
+let retoqueData = [];
+let instData = [];
+let semanaAnterior = null;
+
+try {
+  const s = localStorage.getItem('planilla_semana_anterior');
+  if (s) semanaAnterior = JSON.parse(s);
+} catch(e) {}
+
+function q(n) { return Number(n).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmt(n) { return 'Q ' + q(n); }
+
+function showTab(t) {
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  const map = {retoque:0, inst:1, resumen:2, comp:3};
+  document.querySelectorAll('.tab')[map[t]].classList.add('active');
+  document.getElementById('sec-'+t).classList.add('active');
+  if (t === 'resumen') updateResumen();
+  if (t === 'comp') renderComparativo();
+}
+
+function calcR(r) {
+  const sub = r.dias * r.tarifa;
+  return { sub, extras: r.extras, total: sub + r.extras };
+}
+
+function calcI(r) {
+  const sub = r.tratos * r.tarifa;
+  return { sub, anticipo: r.anticipo, descuento: r.descuento, pagar: Math.max(0, sub - r.anticipo - r.descuento) };
+}
+
+function totales() {
+  const tR = retoqueData.reduce((a,r) => a + calcR(r).total, 0);
+  const tI = instData.reduce((a,r) => a + calcI(r).pagar, 0);
+  const tDesc = instData.reduce((a,r) => a + r.anticipo + r.descuento, 0);
+  const tExtras = retoqueData.reduce((a,r) => a + r.extras, 0);
+  return { tR, tI, tDesc, tExtras, total: tR + tI, empCount: retoqueData.length + instData.length };
+}
+
+function addRetoque() {
+  retoqueData.push({ id: Date.now(), nombre:'', dias:0, tarifa:0, extras:0 });
+  renderRetoque();
+}
+
+function renderRetoque() {
+  document.getElementById('retoque-rows').innerHTML = retoqueData.map((r,i) => {
+    const c = calcR(r);
+    return `<div class="emp-block">
+      <div class="emp-header">
+        <input class="emp-name" type="text" value="${r.nombre}" placeholder="Nombre del empleado" oninput="retoqueData[${i}].nombre=this.value;updateTablaRetoque()">
+        <button class="btn btn-del" onclick="retoqueData.splice(${i},1);renderRetoque()">✕</button>
+      </div>
+      <div class="fields f4">
+        <div class="field"><label>Días trabajados</label><input type="number" min="0" max="7" step="1" value="${r.dias}" oninput="retoqueData[${i}].dias=+this.value;renderRetoque()"></div>
+        <div class="field"><label>Q por día</label><input type="number" min="0" step="1" value="${r.tarifa}" oninput="retoqueData[${i}].tarifa=+this.value;renderRetoque()"></div>
+        <div class="field"><label>Extras (Q)</label><input type="number" min="0" step="1" value="${r.extras}" placeholder="0" oninput="retoqueData[${i}].extras=+this.value;renderRetoque()"></div>
+        <div class="field"><label>Total a pagar</label><div class="field-display">${fmt(c.total)}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  updateTablaRetoque();
+}
+
+function updateTablaRetoque() {
+  const tbody = document.getElementById('tbody-retoque');
+  if (!retoqueData.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">Agrega empleados arriba</div></td></tr>'; return; }
+  let tB=0, tE=0, tF=0;
+  tbody.innerHTML = retoqueData.map(r => {
+    const c = calcR(r); tB+=c.sub; tE+=c.extras; tF+=c.total;
+    return `<tr><td>${r.nombre||'—'}</td><td>${r.dias}</td><td>${fmt(r.tarifa)}</td><td>${fmt(c.sub)}</td><td class="text-green">+${fmt(c.extras)}</td><td>${fmt(c.total)}</td></tr>`;
+  }).join('') + `<tr class="tfoot"><td colspan="3">Total retoque</td><td>${fmt(tB)}</td><td>+${fmt(tE)}</td><td>${fmt(tF)}</td></tr>`;
+}
+
+function addInst() {
+  instData.push({ id: Date.now(), nombre:'', tratos:0, tarifa:0, anticipo:0, descuento:0 });
+  renderInst();
+}
+
+function renderInst() {
+  document.getElementById('inst-rows').innerHTML = instData.map((r,i) => {
+    const c = calcI(r);
+    return `<div class="emp-block">
+      <div class="emp-header">
+        <input class="emp-name" type="text" value="${r.nombre}" placeholder="Nombre del instalador" oninput="instData[${i}].nombre=this.value;updateTablaInst()">
+        <button class="btn btn-del" onclick="instData.splice(${i},1);renderInst()">✕</button>
+      </div>
+      <div class="fields f4">
+        <div class="field"><label>Tratos completados</label><input type="number" min="0" step="1" value="${r.tratos}" oninput="instData[${i}].tratos=+this.value;renderInst()"></div>
+        <div class="field"><label>Q por trato</label><input type="number" min="0" step="1" value="${r.tarifa}" oninput="instData[${i}].tarifa=+this.value;renderInst()"></div>
+        <div class="field"><label>Anticipo (Q)</label><input type="number" min="0" step="1" value="${r.anticipo}" placeholder="0" oninput="instData[${i}].anticipo=+this.value;renderInst()"></div>
+        <div class="field"><label>Descuento (Q)</label><input type="number" min="0" step="1" value="${r.descuento}" placeholder="0" oninput="instData[${i}].descuento=+this.value;renderInst()"></div>
+      </div>
+      <div class="emp-footer">
+        <span class="emp-footer-label">Subtotal:</span><span class="emp-footer-val mono">${fmt(c.sub)}</span>
+        ${c.anticipo>0||c.descuento>0 ? `<span class="emp-footer-label text-red">− ${fmt(c.anticipo+c.descuento)}</span>` : ''}
+        <span class="emp-footer-label">A pagar:</span><span class="emp-footer-val mono">${fmt(c.pagar)}</span>
+      </div>
+    </div>`;
+  }).join('');
+  updateTablaInst();
+}
+
+function updateTablaInst() {
+  const tbody = document.getElementById('tbody-inst');
+  if (!instData.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">Agrega instaladores arriba</div></td></tr>'; return; }
+  let tS=0, tA=0, tD=0, tP=0;
+  tbody.innerHTML = instData.map(r => {
+    const c = calcI(r); tS+=c.sub; tA+=c.anticipo; tD+=c.descuento; tP+=c.pagar;
+    return `<tr><td>${r.nombre||'—'}</td><td>${r.tratos}</td><td>${fmt(r.tarifa)}</td><td>${fmt(c.sub)}</td><td class="text-red">${c.anticipo>0?fmt(c.anticipo):'—'}</td><td class="text-red">${c.descuento>0?fmt(c.descuento):'—'}</td><td>${fmt(c.pagar)}</td></tr>`;
+  }).join('') + `<tr class="tfoot"><td colspan="3">Total instaladores</td><td>${fmt(tS)}</td><td>${fmt(tA)}</td><td>${fmt(tD)}</td><td>${fmt(tP)}</td></tr>`;
+}
+
+function updateResumen() {
+  const t = totales();
+  document.getElementById('m-retoque').textContent = fmt(t.tR);
+  document.getElementById('m-inst').textContent = fmt(t.tI);
+  document.getElementById('m-desc').textContent = fmt(t.tDesc);
+  document.getElementById('m-total').textContent = fmt(t.total);
+  document.getElementById('m-emp').textContent = t.empCount;
+  const tbody = document.getElementById('tbody-full');
+  const rows = [
+    ...retoqueData.map(r => { const c=calcR(r); return `<tr><td>${r.nombre||'—'}</td><td><span class="badge badge-r">Retoque</span></td><td>${fmt(c.sub)}</td><td class="text-green">${c.extras>0?'+'+fmt(c.extras)+' extras':'—'}</td><td>${fmt(c.total)}</td></tr>`; }),
+    ...instData.map(r => { const c=calcI(r); const p=[]; if(c.anticipo>0)p.push('−'+fmt(c.anticipo)+' anticipo'); if(c.descuento>0)p.push('−'+fmt(c.descuento)+' desc.'); return `<tr><td>${r.nombre||'—'}</td><td><span class="badge badge-i">Instalador</span></td><td>${fmt(c.sub)}</td><td class="text-red">${p.length?p.join(', '):'—'}</td><td>${fmt(c.pagar)}</td></tr>`; })
+  ];
+  tbody.innerHTML = rows.length
+    ? rows.join('') + `<tr class="tfoot"><td colspan="4">Total general a pagar</td><td>${fmt(t.total)}</td></tr>`
+    : '<tr><td colspan="5"><div class="empty-state">Sin datos aún</div></td></tr>';
+}
+
+function guardarSemana() {
+  const ini = document.getElementById('semana-inicio').value;
+  const fin = document.getElementById('semana-fin').value;
+  const t = totales();
+  semanaAnterior = {
+    semana: ini&&fin ? ini+' al '+fin : 'Semana guardada',
+    tR: t.tR, tI: t.tI, tDesc: t.tDesc, tExtras: t.tExtras, total: t.total, empCount: t.empCount,
+    retoque: retoqueData.map(r => ({ nombre: r.nombre, ...calcR(r) })),
+    inst: instData.map(r => ({ nombre: r.nombre, ...calcI(r) }))
+  };
+  try { localStorage.setItem('planilla_semana_anterior', JSON.stringify(semanaAnterior)); } catch(e) {}
+  alert('✓ Semana guardada. Aparecerá en el Comparativo la próxima semana.');
+}
+
+function exportarExcel() {
+  const ini = document.getElementById('semana-inicio').value || '';
+  const fin = document.getElementById('semana-fin').value || '';
+  const semana = ini&&fin ? ini+' al '+fin : 'Semana';
+  const wb = XLSX.utils.book_new();
+
+  // Hoja Retoque
+  const rRows = [['PERSONAL DE RETOQUE — '+semana],[''],
+    ['Nombre','Días trabajados','Tarifa por día (Q)','Subtotal (Q)','Extras (Q)','Total a pagar (Q)']];
+  let tRs=0, tRe=0, tRt=0;
+  retoqueData.forEach(r => {
+    const c = calcR(r); tRs+=c.sub; tRe+=c.extras; tRt+=c.total;
+    rRows.push([r.nombre||'—', r.dias, r.tarifa, c.sub, c.extras, c.total]);
+  });
+  rRows.push(['','','TOTAL', tRs, tRe, tRt]);
+  const wsR = XLSX.utils.aoa_to_sheet(rRows);
+  wsR['!cols'] = [{wch:24},{wch:16},{wch:18},{wch:14},{wch:12},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsR, 'Retoque');
+
+  // Hoja Instaladores
+  const iRows = [['INSTALADORES — '+semana],[''],
+    ['Nombre','Tratos completados','Q por trato','Subtotal (Q)','Anticipo (Q)','Descuento (Q)','A pagar (Q)']];
+  let tIS=0, tIA=0, tID=0, tIP=0;
+  instData.forEach(r => {
+    const c = calcI(r); tIS+=c.sub; tIA+=c.anticipo; tID+=c.descuento; tIP+=c.pagar;
+    iRows.push([r.nombre||'—', r.tratos, r.tarifa, c.sub, c.anticipo, c.descuento, c.pagar]);
+  });
+  iRows.push(['','','TOTAL', tIS, tIA, tID, tIP]);
+  const wsI = XLSX.utils.aoa_to_sheet(iRows);
+  wsI['!cols'] = [{wch:24},{wch:18},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, wsI, 'Instaladores');
+
+  // Hoja Resumen
+  const t = totales();
+  const resRows = [['RESUMEN SEMANAL'],['Semana: '+semana],[''],
+    ['Categoría','Monto (Q)'],
+    ['Total retoque', t.tR],
+    ['Extras retoque', t.tExtras],
+    ['Total instaladores (bruto)', instData.reduce((a,r)=>a+calcI(r).sub,0)],
+    ['Anticipos y descuentos', t.tDesc],
+    ['Total instaladores (neto)', t.tI],
+    [''],
+    ['TOTAL PLANILLA A PAGAR', t.total],
+    [''],
+    ['Total empleados', t.empCount],
+    ['  Personal retoque', retoqueData.length],
+    ['  Instaladores', instData.length]
+  ];
+  const wsRes = XLSX.utils.aoa_to_sheet(resRows);
+  wsRes['!cols'] = [{wch:30},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, wsRes, 'Resumen');
+
+  XLSX.writeFile(wb, 'planilla_'+(semana.replace(/ /g,'_').replace(/\//g,'-'))+'.xlsx');
+}
+
+function exportarTxt() {
+  const ini = document.getElementById('semana-inicio').value;
+  const fin = document.getElementById('semana-fin').value;
+  const t = totales();
+  let txt = `PLANILLA SEMANAL\nSemana: ${ini} al ${fin}\n\n=== RETOQUE ===\n`;
+  retoqueData.forEach(r => { const c=calcR(r); txt+=`${r.nombre||'—'}: ${r.dias} días × Q${q(r.tarifa)}${c.extras>0?' + extras Q'+q(c.extras):''} → Q${q(c.total)}\n`; });
+  txt += `Subtotal retoque: Q${q(t.tR)}\n\n=== INSTALADORES ===\n`;
+  instData.forEach(r => { const c=calcI(r); let l=`${r.nombre||'—'}: ${r.tratos} tratos × Q${q(r.tarifa)}`; if(c.anticipo>0)l+=` − anticipo Q${q(c.anticipo)}`; if(c.descuento>0)l+=` − desc. Q${q(c.descuento)}`; txt+=l+` → Q${q(c.pagar)}\n`; });
+  txt += `Subtotal instaladores: Q${q(t.tI)}\n\nTOTAL PLANILLA: Q${q(t.total)}`;
+  const blob = new Blob([txt],{type:'text/plain'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`planilla_${(ini||'semana').replace(/\//g,'-')}.txt`; a.click();
+}
+
+function deltaChip(a, ant) {
+  if (!ant || ant===0) return '';
+  const d=a-ant, p=Math.round((d/ant)*100);
+  if (d===0) return `<span class="delta delta-flat">= igual</span>`;
+  return d>0 ? `<span class="delta delta-up">▲ ${p}%</span>` : `<span class="delta delta-down">▼ ${Math.abs(p)}%</span>`;
+}
+
+function barPair(label, vA, vAnt) {
+  const max=Math.max(vA,vAnt,1), pA=Math.round((vA/max)*100), pAnt=Math.round((vAnt/max)*100);
+  return `<div class="bar-wrap">
+    <div class="bar-title">${label}</div>
+    <div class="bar-row"><div class="bar-meta"><span style="color:var(--green)">Esta semana</span><span>${fmt(vA)}</span></div><div class="bar-track"><div class="bar-fill bar-actual" style="width:${pA}%"></div></div></div>
+    <div class="bar-row" style="margin-top:6px"><div class="bar-meta"><span style="color:var(--blue)">Semana anterior</span><span>${fmt(vAnt)}</span></div><div class="bar-track"><div class="bar-fill bar-anterior" style="width:${pAnt}%"></div></div></div>
+  </div>`;
+}
+
+function renderComparativo() {
+  const cont = document.getElementById('comp-content');
+  const ini = document.getElementById('semana-inicio').value;
+  const fin = document.getElementById('semana-fin').value;
+  const semActual = ini&&fin ? ini+' al '+fin : 'Semana actual';
+  const t = totales();
+
+  if (!semanaAnterior) {
+    cont.innerHTML = `<div class="card"><div class="empty-state">
+      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Aún no hay semana anterior guardada.<br>Completa la planilla y presiona <strong>"Guardar semana actual"</strong> en el Resumen.
+    </div></div>`;
+    return;
+  }
+
+  const ant = semanaAnterior;
+  cont.innerHTML = `
+    <div class="cmp-grid">
+      <div class="cmp-card highlight">
+        <div class="cmp-week-label">Esta semana</div>
+        <div class="cmp-week-title">${semActual}</div>
+        <div class="cmp-row"><span class="cmp-row-label">Retoque</span><span class="cmp-row-val">${fmt(t.tR)}</span></div>
+        <div class="cmp-row"><span class="cmp-row-label">Instaladores</span><span class="cmp-row-val">${fmt(t.tI)}</span></div>
+        <div class="cmp-row"><span class="cmp-row-label">Extras</span><span class="cmp-row-val text-green">+${fmt(t.tExtras)}</span></div>
+        <div class="cmp-row"><span class="cmp-row-label">Desc./anticipos</span><span class="cmp-row-val text-red">−${fmt(t.tDesc)}</span></div>
+        <div class="cmp-row"><span class="cmp-row-label">Empleados</span><span class="cmp-row-val">${t.empCount}</span></div>
+        <div class="cmp-row"><span class="cmp-row-label">Total a pagar</span><span class="cmp-row-val">${fmt(t.total)}</span></div>
+      </div>
+      <div class="cmp-card">
+        <div class="cmp-week-label">Semana anterior</div>
+        <div class="cmp-week-title">${ant.semana}</div>
+        <div class="cmp-row"><span class="cmp-row-label">Retoque</span><span class="cmp-row-val">${fmt(ant.tR)}</span></div>
+        <div class="cmp-row"><span class="cmp-row-label">Instaladores</span><span class="cmp-row-val">${fmt(ant.tI)}</span></div>
+        <div class="cmp-row"><span class="cmp-row-label">Extras</span><span class="cmp-row-val text-green">+${fmt(ant.tExtras)}</span></div>
+        <div class="cmp-row"><span class="cmp-row-label">Desc./anticipos</span><span class="cmp-row-val text-red">−${fmt(ant.tDesc)}</span></div>
+        <div class="cmp-row"><span class="cmp-row-label">Empleados</span><span class="cmp-row-val">${ant.empCount}</span></div>
+        <div class="cmp-row"><span class="cmp-row-label">Total a pagar</span><span class="cmp-row-val">${fmt(ant.total)}</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Variación semana a semana</div>
+      <table>
+        <thead><tr><th>Categoría</th><th>Anterior</th><th>Actual</th><th>Cambio</th></tr></thead>
+        <tbody>
+          <tr><td>Total retoque</td><td>${fmt(ant.tR)}</td><td>${fmt(t.tR)}</td><td>${deltaChip(t.tR,ant.tR)}</td></tr>
+          <tr><td>Total instaladores</td><td>${fmt(ant.tI)}</td><td>${fmt(t.tI)}</td><td>${deltaChip(t.tI,ant.tI)}</td></tr>
+          <tr><td>Extras retoque</td><td>${fmt(ant.tExtras)}</td><td>${fmt(t.tExtras)}</td><td>${deltaChip(t.tExtras,ant.tExtras)}</td></tr>
+          <tr><td>Desc./anticipos</td><td>${fmt(ant.tDesc)}</td><td>${fmt(t.tDesc)}</td><td>${deltaChip(t.tDesc,ant.tDesc)}</td></tr>
+          <tr class="tfoot"><td>Total planilla</td><td>${fmt(ant.total)}</td><td>${fmt(t.total)}</td><td>${deltaChip(t.total,ant.total)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Barras comparativas</div>
+      ${barPair('Retoque', t.tR, ant.tR)}
+      ${barPair('Instaladores', t.tI, ant.tI)}
+      ${barPair('Total planilla', t.total, ant.total)}
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-excel" onclick="exportarExcelComparativo()">⬇ Descargar comparativo Excel</button>
+      <button class="btn" style="color:var(--red)" onclick="if(confirm('¿Borrar semana anterior guardada?')){semanaAnterior=null;try{localStorage.removeItem('planilla_semana_anterior');}catch(e){}renderComparativo();}">✕ Borrar semana anterior</button>
+    </div>`;
+}
+
+function exportarExcelComparativo() {
+  if (!semanaAnterior) { alert('No hay semana anterior guardada.'); return; }
+  const ini = document.getElementById('semana-inicio').value || '';
+  const fin = document.getElementById('semana-fin').value || '';
+  const semActual = ini&&fin ? ini+' al '+fin : 'Semana actual';
+  const t = totales();
+  const ant = semanaAnterior;
+  const wb = XLSX.utils.book_new();
+  const rows = [
+    ['COMPARATIVO SEMANAL'], [''],
+    ['Categoría', 'Sem. anterior ('+ant.semana+')', 'Esta semana ('+semActual+')', 'Diferencia (Q)', 'Cambio (%)'],
+    ['Total retoque', ant.tR, t.tR, +(t.tR-ant.tR).toFixed(2), ant.tR ? +((t.tR-ant.tR)/ant.tR*100).toFixed(1) : 0],
+    ['Extras retoque', ant.tExtras, t.tExtras, +(t.tExtras-ant.tExtras).toFixed(2), ant.tExtras ? +((t.tExtras-ant.tExtras)/ant.tExtras*100).toFixed(1) : 0],
+    ['Total instaladores', ant.tI, t.tI, +(t.tI-ant.tI).toFixed(2), ant.tI ? +((t.tI-ant.tI)/ant.tI*100).toFixed(1) : 0],
+    ['Desc./anticipos', ant.tDesc, t.tDesc, +(t.tDesc-ant.tDesc).toFixed(2), ant.tDesc ? +((t.tDesc-ant.tDesc)/ant.tDesc*100).toFixed(1) : 0],
+    [''],
+    ['TOTAL PLANILLA', ant.total, t.total, +(t.total-ant.total).toFixed(2), ant.total ? +((t.total-ant.total)/ant.total*100).toFixed(1) : 0],
+    [''],
+    ['Total empleados', ant.empCount, t.empCount, '', '']
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:30},{wch:24},{wch:24},{wch:16},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Comparativo');
+  XLSX.writeFile(wb, 'comparativo_planilla.xlsx');
+}
+</script>
+</body>
+</html>
