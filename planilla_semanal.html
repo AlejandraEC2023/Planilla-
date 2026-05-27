@@ -33,11 +33,13 @@
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;}
   .card-title{font-size:14px;font-weight:600;margin-bottom:.875rem;display:flex;align-items:center;gap:8px;}
   .emp-block{border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:.75rem;background:var(--bg);}
+  .emp-block.inactivo{opacity:.5;}
   .inst-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap;}
   .inst-header-left{display:flex;flex-direction:column;gap:6px;flex:1;}
   .inst-name-row{display:flex;align-items:center;gap:10px;}
   .emp-name{font-size:14px;font-weight:600;border:none;background:transparent;color:var(--text);border-bottom:1.5px solid var(--border);padding:2px 4px;width:200px;font-family:'DM Sans',sans-serif;}
   .emp-name:focus{outline:none;border-bottom-color:var(--green);}
+  .emp-name-display{font-size:14px;font-weight:600;color:var(--text);padding:2px 4px;}
   .inst-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
   .inst-meta-item{display:flex;align-items:center;gap:6px;}
   .inst-meta-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
@@ -129,6 +131,12 @@
   .historial-semana{font-weight:500;}
   .historial-totales{display:flex;gap:16px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);}
   .historial-fecha{font-size:11px;color:var(--text3);}
+  /* empleados fijos */
+  .emp-fijo{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;background:var(--bg);}
+  .emp-fijo-nombre{font-weight:500;font-size:14px;}
+  .emp-fijo-tipo{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:8px;}
+  .toggle-activo{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);}
+  input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--green);}
 </style>
 </head>
 <body>
@@ -144,19 +152,11 @@
 <div class="sync-bar">
   <div class="sync-status">
     <div class="sync-dot" id="sync-dot"></div>
-    <span id="sync-text">Listo</span>
+    <span id="sync-text">Cargando...</span>
   </div>
   <div style="display:flex;gap:8px;align-items:center;">
     <span style="font-size:12px;color:var(--text2);">Google Sheets conectado</span>
     <a href="https://docs.google.com/spreadsheets/d/1fhPuu_A_EUq3hnlBj20fxcDyVm2QQKjkI5tZuZQePno/edit" target="_blank" style="font-size:12px;color:var(--blue-dark);text-decoration:none;">Ver hoja ↗</a>
-  </div>
-</div>
-
-<div id="carga-banner" style="display:none;background:#E6F1FB;border-bottom:1px solid #A8CBF0;padding:.75rem 2rem;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-  <span style="font-size:13px;color:#185FA5;">¿Deseas cargar la última semana guardada en Google Sheets?</span>
-  <div style="display:flex;gap:8px;">
-    <button onclick="cargarUltimaSesion()" style="padding:6px 14px;background:#185FA5;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;">Sí, cargar última sesión</button>
-    <button onclick="document.getElementById('carga-banner').style.display='none'" style="padding:6px 14px;background:transparent;color:#185FA5;border:1px solid #A8CBF0;border-radius:6px;cursor:pointer;font-size:13px;">Empezar nueva semana</button>
   </div>
 </div>
 
@@ -167,21 +167,21 @@
     <button class="tab" onclick="showTab('resumen')">◈ Resumen</button>
     <button class="tab" onclick="showTab('comp')">⇄ Comparativo</button>
     <button class="tab" onclick="showTab('historial')">📋 Historial</button>
+    <button class="tab" onclick="showTab('empleados')">👥 Empleados</button>
   </div>
 
   <!-- RETOQUE -->
   <div class="section active" id="sec-retoque">
     <div class="card">
       <div class="card-title">Personal de retoque <span class="badge badge-r">Pago por día</span></div>
-      <p class="hint">Días trabajados, tarifa diaria y horas extra.</p>
-      <div id="retoque-rows"></div>
-      <button class="btn btn-add" onclick="addRetoque()">+ Agregar retocador</button>
+      <p class="hint">Los nombres vienen de la lista de empleados. Solo llena días, tarifa y horas extra.</p>
+      <div id="retoque-rows"><div class="empty">Cargando empleados...</div></div>
     </div>
     <div class="card">
       <div class="card-title">Resumen retoque</div>
       <table>
         <thead><tr><th>Nombre</th><th>Días</th><th>Q/día</th><th>Subtotal</th><th>Hs. extra</th><th>Q/hora</th><th>Extra</th><th>Total</th></tr></thead>
-        <tbody id="tbody-retoque"><tr><td colspan="8"><div class="empty">Agrega retocadores arriba</div></td></tr></tbody>
+        <tbody id="tbody-retoque"><tr><td colspan="8"><div class="empty">Sin datos</div></td></tr></tbody>
       </table>
     </div>
     <div class="btn-group">
@@ -193,16 +193,15 @@
   <div class="section" id="sec-inst">
     <div class="card">
       <div class="card-title">Instaladores <span class="badge badge-i">% del valor del proyecto</span></div>
-      <p class="hint">Proyecto y valor total en el encabezado. Ingresa lo ya pagado y el % de esta semana.</p>
-      <div id="inst-rows"></div>
-      <button class="btn btn-add" onclick="addInst()">+ Agregar instalador</button>
+      <p class="hint">Los nombres vienen de la lista de empleados. Solo llena proyecto, valor y porcentaje.</p>
+      <div id="inst-rows"><div class="empty">Cargando empleados...</div></div>
     </div>
     <div class="card">
       <div class="card-title">Resumen instaladores</div>
       <div style="overflow-x:auto">
         <table>
           <thead><tr><th>Nombre</th><th>Proyecto</th><th>Ya pagado</th><th>Saldo</th><th>%</th><th>Pago semana</th><th>Saldo restante</th></tr></thead>
-          <tbody id="tbody-inst"><tr><td colspan="7"><div class="empty">Agrega instaladores arriba</div></td></tr></tbody>
+          <tbody id="tbody-inst"><tr><td colspan="7"><div class="empty">Sin datos</div></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -214,7 +213,7 @@
   <!-- RESUMEN -->
   <div class="section" id="sec-resumen">
     <div class="save-banner">
-      <span class="save-text">💾 Guarda la semana — se guardará en Google Sheets y localmente.</span>
+      <span class="save-text">💾 Guarda la semana en Google Sheets.</span>
       <button class="btn btn-primary" onclick="guardarSemana()">Guardar semana en Sheets</button>
     </div>
     <div class="metric-grid">
@@ -238,27 +237,47 @@
   </div>
 
   <!-- COMPARATIVO -->
-  <div class="section" id="sec-comp">
-    <div id="comp-content"></div>
-  </div>
+  <div class="section" id="sec-comp"><div id="comp-content"></div></div>
 
   <!-- HISTORIAL -->
   <div class="section" id="sec-historial">
     <div class="card">
       <div class="card-title">Historial de semanas guardadas</div>
-      <p class="hint">Todas las semanas guardadas en Google Sheets. Click en una para ver el detalle.</p>
+      <p class="hint">Click en una semana para ver el detalle.</p>
       <div id="historial-list"><div class="empty">Cargando historial...</div></div>
     </div>
     <div id="historial-detalle"></div>
   </div>
+
+  <!-- EMPLEADOS -->
+  <div class="section" id="sec-empleados">
+    <div class="card">
+      <div class="card-title">Retocadores <span class="badge badge-r">Fijos</span></div>
+      <p class="hint">Agrega aquí el personal de retoque. Se guardan en Sheets y cargan automáticamente cada semana.</p>
+      <div id="lista-retocadores"><div class="empty">Cargando...</div></div>
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center;">
+        <input type="text" id="nuevo-retocador" placeholder="Nombre del retocador" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);width:220px;">
+        <button class="btn btn-green" onclick="agregarEmpleadoFijo('retoque')">+ Agregar</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Instaladores <span class="badge badge-i">Fijos</span></div>
+      <p class="hint">Agrega aquí los instaladores. Se guardan en Sheets y cargan automáticamente cada semana.</p>
+      <div id="lista-instaladores"><div class="empty">Cargando...</div></div>
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center;">
+        <input type="text" id="nuevo-instalador" placeholder="Nombre del instalador" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);width:220px;">
+        <button class="btn btn-blue" onclick="agregarEmpleadoFijo('inst')">+ Agregar</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────
-const SHEET_ID = '1fhPuu_A_EUq3hnlBj20fxcDyVm2QQKjkI5tZuZQePno';
-const SERVICE_ACCOUNT = {
-  client_email: 'planilla-bot@planilla-semanal-ec.iam.gserviceaccount.com',
-  private_key: `-----BEGIN PRIVATE KEY-----
+// ── CONFIG ───────────────────────────────────────────────────
+const SHEET_ID='1fhPuu_A_EUq3hnlBj20fxcDyVm2QQKjkI5tZuZQePno';
+const SERVICE_ACCOUNT={
+  client_email:'planilla-bot@planilla-semanal-ec.iam.gserviceaccount.com',
+  private_key:`-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDdYDXVE0bG3n8H
 KJXOFhstFrz7vpfGpHjDUm99TiSigf2mX8+XE0bNRrR1iATsM5uTLC5NxmJi1pvK
 I8nStMleMlfoshwICHK1kXWy8Y5j/1K7jnYBGrjwrt1WSiLNc84HT528SZMNGx8z
@@ -289,10 +308,12 @@ pMivReDswoN/JIKCSlgKmYNU
 };
 
 // ── DATA ─────────────────────────────────────────────────────
-let retoqueData=[];
-let instData=[];
+let retoqueData=[];  // datos semanales retoque
+let instData=[];     // datos semanales instaladores
+let empleadosRetoque=[];  // lista fija
+let empleadosInst=[];     // lista fija
 let semanaAnterior=null;
-try{const s=localStorage.getItem('planilla_v8_anterior');if(s)semanaAnterior=JSON.parse(s);}catch(e){}
+try{const s=localStorage.getItem('planilla_v9_anterior');if(s)semanaAnterior=JSON.parse(s);}catch(e){}
 
 // ── HELPERS ──────────────────────────────────────────────────
 function q(n){return Number(n).toLocaleString('es-GT',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -304,69 +325,61 @@ function getSemana(){
   return ini&&fin?ini+' al '+fin:'Semana sin fecha';
 }
 function setSyncStatus(state,msg){
-  const dot=document.getElementById('sync-dot');
-  const txt=document.getElementById('sync-text');
-  dot.className='sync-dot '+state;
-  txt.textContent=msg;
+  document.getElementById('sync-dot').className='sync-dot '+state;
+  document.getElementById('sync-text').textContent=msg;
 }
 
 // ── GOOGLE AUTH ───────────────────────────────────────────────
 async function getAccessToken(){
   const now=Math.floor(Date.now()/1000);
   const header=btoa(JSON.stringify({alg:'RS256',typ:'JWT'}));
-  const claim=btoa(JSON.stringify({
-    iss:SERVICE_ACCOUNT.client_email,
-    scope:'https://www.googleapis.com/auth/spreadsheets',
-    aud:'https://oauth2.googleapis.com/token',
-    exp:now+3600,iat:now
-  }));
+  const claim=btoa(JSON.stringify({iss:SERVICE_ACCOUNT.client_email,scope:'https://www.googleapis.com/auth/spreadsheets',aud:'https://oauth2.googleapis.com/token',exp:now+3600,iat:now}));
   const sigInput=header+'.'+claim;
   const sig=await signRS256(sigInput,SERVICE_ACCOUNT.private_key);
   const jwt=sigInput+'.'+sig;
-  const res=await fetch('https://oauth2.googleapis.com/token',{
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
-  });
+  const res=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`});
   const data=await res.json();
-  if(!data.access_token)throw new Error('No se pudo obtener token: '+JSON.stringify(data));
+  if(!data.access_token)throw new Error('Token error: '+JSON.stringify(data));
   return data.access_token;
 }
-
 async function signRS256(input,pem){
   const sig=new KJUR.crypto.Signature({alg:'SHA256withRSA'});
-  sig.init(pem);
-  sig.updateString(input);
+  sig.init(pem);sig.updateString(input);
   const hexSig=sig.sign();
   const bytes=new Uint8Array(hexSig.match(/.{1,2}/g).map(b=>parseInt(b,16)));
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
-
-async function sheetsRequest(method,range,body){
+async function sheetsGet(range){
   const token=await getAccessToken();
-  const base=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
-  let url,opts;
-  if(method==='GET'){
-    url=`${base}/values/${encodeURIComponent(range)}`;
-    opts={headers:{Authorization:'Bearer '+token}};
-  } else {
-    url=`${base}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-    opts={method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({values:body})};
-  }
-  const res=await fetch(url,opts);
+  const res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}`,{headers:{Authorization:'Bearer '+token}});
   return res.json();
+}
+async function sheetsAppend(range,values){
+  const token=await getAccessToken();
+  const res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({values})});
+  return res.json();
+}
+async function sheetsUpdate(range,values){
+  const token=await getAccessToken();
+  const res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,{method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({values})});
+  return res.json();
+}
+async function sheetsClear(range){
+  const token=await getAccessToken();
+  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}:clear`,{method:'POST',headers:{Authorization:'Bearer '+token}});
 }
 
 // ── TABS ─────────────────────────────────────────────────────
 function showTab(t){
   document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.section').forEach(el=>el.classList.remove('active'));
-  const map={retoque:0,inst:1,resumen:2,comp:3,historial:4};
+  const map={retoque:0,inst:1,resumen:2,comp:3,historial:4,empleados:5};
   document.querySelectorAll('.tab')[map[t]].classList.add('active');
   document.getElementById('sec-'+t).classList.add('active');
   if(t==='resumen')updateResumen();
   if(t==='comp')renderComp();
   if(t==='historial')cargarHistorial();
+  if(t==='empleados')renderListaEmpleados();
 }
 
 // ── CALC ─────────────────────────────────────────────────────
@@ -385,63 +398,163 @@ function totales(){
   return{tR,tI,total:tR+tI,empCount:retoqueData.length+instData.length};
 }
 
-// ── RETOQUE ──────────────────────────────────────────────────
-function addRetoque(){retoqueData.push({id:Date.now(),nombre:'',dias:0,tarifa:0,horas:0,tarifaHora:0});renderRetoque();}
+// ── EMPLEADOS FIJOS ───────────────────────────────────────────
+async function cargarEmpleadosFijos(){
+  try{
+    const [retData,instDataH]=await Promise.all([sheetsGet('Empleados_Retoque!A:B'),sheetsGet('Empleados_Inst!A:B')]);
+    empleadosRetoque=(retData.values||[]).filter(r=>r[0]&&r[0]!=='Nombre').map(r=>r[0]);
+    empleadosInst=(instDataH.values||[]).filter(r=>r[0]&&r[0]!=='Nombre').map(r=>r[0]);
+    // inicializar datos semanales con empleados fijos
+    inicializarDatosSemanales();
+  }catch(e){
+    setSyncStatus('error','Error cargando empleados: '+e.message);
+  }
+}
+
+function inicializarDatosSemanales(){
+  // retoque: mantener datos si ya existen, agregar nuevos
+  const nombresActuales=retoqueData.map(r=>r.nombre);
+  empleadosRetoque.forEach(nombre=>{
+    if(!nombresActuales.includes(nombre)){
+      retoqueData.push({nombre,dias:0,tarifa:0,horas:0,tarifaHora:0,activo:true});
+    }
+  });
+  // instaladores
+  const nombresInstActuales=instData.map(r=>r.nombre);
+  empleadosInst.forEach(nombre=>{
+    if(!nombresInstActuales.includes(nombre)){
+      instData.push({nombre,proyecto:'',valorProyecto:0,yaPagado:0,porcentaje:0,activo:true});
+    }
+  });
+  renderRetoque();
+  renderInst();
+  setSyncStatus('ok','Listo');
+}
+
+async function agregarEmpleadoFijo(tipo){
+  const inputId=tipo==='retoque'?'nuevo-retocador':'nuevo-instalador';
+  const nombre=document.getElementById(inputId).value.trim();
+  if(!nombre)return;
+  setSyncStatus('saving','Guardando empleado...');
+  try{
+    const sheet=tipo==='retoque'?'Empleados_Retoque':'Empleados_Inst';
+    await sheetsAppend(sheet+'!A:A',[[nombre]]);
+    if(tipo==='retoque'){
+      empleadosRetoque.push(nombre);
+      retoqueData.push({nombre,dias:0,tarifa:0,horas:0,tarifaHora:0,activo:true});
+      renderRetoque();
+    } else {
+      empleadosInst.push(nombre);
+      instData.push({nombre,proyecto:'',valorProyecto:0,yaPagado:0,porcentaje:0,activo:true});
+      renderInst();
+    }
+    document.getElementById(inputId).value='';
+    renderListaEmpleados();
+    setSyncStatus('ok','Empleado guardado ✓');
+    setTimeout(()=>setSyncStatus('ok','Listo'),3000);
+  }catch(e){setSyncStatus('error','Error: '+e.message);}
+}
+
+async function eliminarEmpleadoFijo(tipo,nombre){
+  if(!confirm(`¿Eliminar a ${nombre} de la lista fija?`))return;
+  setSyncStatus('saving','Eliminando...');
+  try{
+    const sheet=tipo==='retoque'?'Empleados_Retoque':'Empleados_Inst';
+    // recargar y reescribir sin ese nombre
+    const data=await sheetsGet(sheet+'!A:A');
+    const rows=(data.values||[]).filter(r=>r[0]&&r[0]!=='Nombre'&&r[0]!==nombre);
+    await sheetsClear(sheet+'!A:A');
+    if(rows.length)await sheetsUpdate(sheet+'!A1',rows);
+    if(tipo==='retoque'){
+      empleadosRetoque=empleadosRetoque.filter(n=>n!==nombre);
+      retoqueData=retoqueData.filter(r=>r.nombre!==nombre);
+      renderRetoque();
+    } else {
+      empleadosInst=empleadosInst.filter(n=>n!==nombre);
+      instData=instData.filter(r=>r.nombre!==nombre);
+      renderInst();
+    }
+    renderListaEmpleados();
+    setSyncStatus('ok','Eliminado ✓');
+    setTimeout(()=>setSyncStatus('ok','Listo'),2000);
+  }catch(e){setSyncStatus('error','Error: '+e.message);}
+}
+
+function renderListaEmpleados(){
+  const lr=document.getElementById('lista-retocadores');
+  const li=document.getElementById('lista-instaladores');
+  lr.innerHTML=empleadosRetoque.length?empleadosRetoque.map(n=>`
+    <div class="emp-fijo">
+      <div style="display:flex;align-items:center;"><span class="emp-fijo-nombre">${n}</span><span class="emp-fijo-tipo badge-r" style="background:var(--green-bg);color:var(--green-dark);">Retoque</span></div>
+      <button class="btn btn-del" onclick="eliminarEmpleadoFijo('retoque','${n}')">✕</button>
+    </div>`).join(''):'<div class="empty">Sin retocadores aún</div>';
+  li.innerHTML=empleadosInst.length?empleadosInst.map(n=>`
+    <div class="emp-fijo">
+      <div style="display:flex;align-items:center;"><span class="emp-fijo-nombre">${n}</span><span class="emp-fijo-tipo badge-i" style="background:var(--blue-bg);color:var(--blue-dark);margin-left:8px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">Instalador</span></div>
+      <button class="btn btn-del" onclick="eliminarEmpleadoFijo('inst','${n}')">✕</button>
+    </div>`).join(''):'<div class="empty">Sin instaladores aún</div>';
+}
+
+// ── RETOQUE ───────────────────────────────────────────────────
 function renderRetoque(){
-  document.getElementById('retoque-rows').innerHTML=retoqueData.map((r,i)=>{
-    const c=calcR(r);
-    return`<div class="emp-block">
+  const c=document.getElementById('retoque-rows');
+  if(!retoqueData.length){c.innerHTML='<div class="empty">Agrega retocadores en la pestaña 👥 Empleados</div>';updateTablaRetoque();return;}
+  c.innerHTML=retoqueData.map((r,i)=>{
+    const calc=calcR(r);
+    return`<div class="emp-block ${r.activo===false?'inactivo':''}">
       <div class="emp-header">
-        <input class="emp-name" type="text" value="${r.nombre}" placeholder="Nombre del retocador" oninput="retoqueData[${i}].nombre=this.value;updateTablaRetoque()">
-        <button class="btn btn-del" onclick="retoqueData.splice(${i},1);renderRetoque()">✕</button>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" ${r.activo!==false?'checked':''} onchange="retoqueData[${i}].activo=this.checked;renderRetoque()" title="Activo esta semana">
+          <span class="emp-name-display">${r.nombre}</span>
+        </div>
+        <span style="font-size:11px;color:var(--text3);">Total: <strong style="color:var(--text);font-family:'DM Mono',monospace;">${fmt(calc.total)}</strong></span>
       </div>
-      <p class="sub-label">Pago base</p>
+      ${r.activo===false?'<p style="font-size:12px;color:var(--text3);padding:4px 0;">No trabajó esta semana</p>':`
       <div class="fields f3">
         <div class="field"><label>Días trabajados</label><input type="number" min="0" max="7" step="1" value="${r.dias}" oninput="retoqueData[${i}].dias=+this.value;renderRetoque()"></div>
         <div class="field"><label>Q por día</label><input type="number" min="0" step="1" value="${r.tarifa}" oninput="retoqueData[${i}].tarifa=+this.value;renderRetoque()"></div>
-        <div class="field"><label>Subtotal días</label><div class="field-display">${fmt(c.sub)}</div></div>
+        <div class="field"><label>Subtotal días</label><div class="field-display">${fmt(calc.sub)}</div></div>
       </div>
       <hr class="divider">
-      <p class="sub-label">Horas extra</p>
       <div class="fields f3">
         <div class="field"><label>Horas extra</label><input type="number" min="0" step="0.5" value="${r.horas}" placeholder="0" oninput="retoqueData[${i}].horas=+this.value;renderRetoque()"></div>
         <div class="field"><label>Q por hora</label><input type="number" min="0" step="1" value="${r.tarifaHora}" placeholder="0" oninput="retoqueData[${i}].tarifaHora=+this.value;renderRetoque()"></div>
-        <div class="field"><label>Subtotal extras</label><div class="field-display text-green">${fmt(c.extra)}</div></div>
-      </div>
-      <div class="emp-footer">
-        <span class="emp-footer-label">Total a pagar:</span>
-        <span class="emp-footer-val">${fmt(c.total)}</span>
-      </div>
+        <div class="field"><label>Subtotal extras</label><div class="field-display text-green">${fmt(calc.extra)}</div></div>
+      </div>`}
     </div>`;
   }).join('');
   updateTablaRetoque();
 }
+
 function updateTablaRetoque(){
   const tbody=document.getElementById('tbody-retoque');
-  if(!retoqueData.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty">Agrega retocadores arriba</div></td></tr>';return;}
+  const activos=retoqueData.filter(r=>r.activo!==false);
+  if(!activos.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty">Sin datos</div></td></tr>';return;}
   let tS=0,tE=0,tT=0;
-  tbody.innerHTML=retoqueData.map(r=>{const c=calcR(r);tS+=c.sub;tE+=c.extra;tT+=c.total;
-    return`<tr><td>${r.nombre||'—'}</td><td>${r.dias}</td><td>${fmt(r.tarifa)}</td><td>${fmt(c.sub)}</td><td>${r.horas}</td><td>${fmt(r.tarifaHora)}</td><td class="text-green">+${fmt(c.extra)}</td><td>${fmt(c.total)}</td></tr>`;
+  tbody.innerHTML=activos.map(r=>{const c=calcR(r);tS+=c.sub;tE+=c.extra;tT+=c.total;
+    return`<tr><td>${r.nombre}</td><td>${r.dias}</td><td>${fmt(r.tarifa)}</td><td>${fmt(c.sub)}</td><td>${r.horas}</td><td>${fmt(r.tarifaHora)}</td><td class="text-green">+${fmt(c.extra)}</td><td>${fmt(c.total)}</td></tr>`;
   }).join('')+`<tr class="tfoot"><td colspan="3">Total retoque</td><td>${fmt(tS)}</td><td colspan="2"></td><td>+${fmt(tE)}</td><td>${fmt(tT)}</td></tr>`;
 }
 
 // ── INSTALADORES ─────────────────────────────────────────────
-function addInst(){instData.push({id:Date.now(),nombre:'',proyecto:'',valorProyecto:0,yaPagado:0,porcentaje:0});renderInst();}
 function renderInst(){
-  document.getElementById('inst-rows').innerHTML=instData.map((r,i)=>{
-    const c=calcI(r);
-    const wYa=Math.min(100,c.pctYa);
-    const wSem=Math.min(100-wYa,c.pctSemana);
+  const c=document.getElementById('inst-rows');
+  if(!instData.length){c.innerHTML='<div class="empty">Agrega instaladores en la pestaña 👥 Empleados</div>';updateTablaInst();return;}
+  c.innerHTML=instData.map((r,i)=>{
+    const calc=calcI(r);
+    const wYa=Math.min(100,calc.pctYa);
+    const wSem=Math.min(100-wYa,calc.pctSemana);
     let saldoClass='ok';
-    if(c.saldo<=0)saldoClass='over';
-    else if(c.saldo<r.valorProyecto*0.2)saldoClass='warn';
-    return`<div class="emp-block">
+    if(calc.saldo<=0)saldoClass='over';
+    else if(calc.saldo<r.valorProyecto*0.2)saldoClass='warn';
+    return`<div class="emp-block ${r.activo===false?'inactivo':''}">
       <div class="inst-header">
         <div class="inst-header-left">
           <div class="inst-name-row">
-            <input class="emp-name" type="text" value="${r.nombre}" placeholder="Nombre del instalador" oninput="instData[${i}].nombre=this.value;updateTablaInst()">
-            <button class="btn btn-del" onclick="instData.splice(${i},1);renderInst()">✕</button>
+            <input type="checkbox" ${r.activo!==false?'checked':''} onchange="instData[${i}].activo=this.checked;renderInst()" title="Activo esta semana">
+            <span class="emp-name-display" style="margin-left:6px">${r.nombre}</span>
           </div>
+          ${r.activo===false?'<p style="font-size:12px;color:var(--text3);padding:4px 0;">No trabajó esta semana</p>':`
           <div class="inst-meta">
             <div class="inst-meta-item">
               <span class="inst-meta-label">Proyecto:</span>
@@ -451,16 +564,16 @@ function renderInst(){
               <span class="inst-meta-label">Valor total (Q):</span>
               <input class="inst-meta-input" type="number" min="0" step="1" value="${r.valorProyecto}" oninput="instData[${i}].valorProyecto=+this.value;renderInst()">
             </div>
-          </div>
+          </div>`}
         </div>
       </div>
+      ${r.activo===false?'':`
       <hr class="divider">
-      <p class="sub-label">Pago esta semana</p>
       <div class="fields f4">
         <div class="field"><label>Ya pagado (Q)</label><input type="number" min="0" step="1" value="${r.yaPagado}" placeholder="0" oninput="instData[${i}].yaPagado=+this.value;renderInst()"></div>
-        <div class="field"><label>Saldo disponible</label><div class="field-display ${saldoClass}">${fmt(c.saldo)}</div></div>
-        <div class="field"><label>% a pagar esta semana</label><input type="number" min="0" max="100" step="1" value="${r.porcentaje}" placeholder="0" oninput="instData[${i}].porcentaje=+this.value;renderInst()"></div>
-        <div class="field"><label>Pago esta semana</label><div class="field-display ${c.pagoSemana>0?'ok':''}">${fmt(c.pagoSemana)}</div></div>
+        <div class="field"><label>Saldo disponible</label><div class="field-display ${saldoClass}">${fmt(calc.saldo)}</div></div>
+        <div class="field"><label>% esta semana</label><input type="number" min="0" max="100" step="1" value="${r.porcentaje}" placeholder="0" oninput="instData[${i}].porcentaje=+this.value;renderInst()"></div>
+        <div class="field"><label>Pago esta semana</label><div class="field-display ${calc.pagoSemana>0?'ok':''}">${fmt(calc.pagoSemana)}</div></div>
       </div>
       <div class="avance-wrap">
         <div class="avance-title">Avance de pago del proyecto</div>
@@ -468,29 +581,31 @@ function renderInst(){
           <span class="avance-bar-label">Distribución</span>
           <div class="avance-track">
             <div style="display:flex;height:100%;width:100%;">
-              ${wYa>0?`<div style="width:${wYa}%;background:#378ADD;display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:700;color:#fff;">${wYa>=8?pct(c.pctYa):''}</span></div>`:''}
-              ${wSem>0?`<div style="width:${wSem}%;background:#1D9E75;display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:700;color:#fff;">${wSem>=8?pct(c.pctSemana):''}</span></div>`:''}
-              <div style="flex:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:600;color:var(--text2);">${c.pctRestante>8?pct(c.pctRestante):''}</span></div>
+              ${wYa>0?`<div style="width:${wYa}%;background:#378ADD;display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:700;color:#fff;">${wYa>=8?pct(calc.pctYa):''}</span></div>`:''}
+              ${wSem>0?`<div style="width:${wSem}%;background:#1D9E75;display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:700;color:#fff;">${wSem>=8?pct(calc.pctSemana):''}</span></div>`:''}
+              <div style="flex:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:600;color:var(--text2);">${calc.pctRestante>8?pct(calc.pctRestante):''}</span></div>
             </div>
           </div>
         </div>
         <div class="avance-legend">
           <div class="avance-legend-item"><div class="avance-dot" style="background:#378ADD;"></div><span>Ya pagado: <strong>${fmt(r.yaPagado)}</strong></span></div>
-          <div class="avance-legend-item"><div class="avance-dot" style="background:#1D9E75;"></div><span>Esta semana: <strong>${fmt(c.pagoSemana)}</strong></span></div>
-          <div class="avance-legend-item"><div class="avance-dot" style="background:var(--surface2);border:1px solid var(--border);"></div><span>Saldo restante: <strong>${fmt(c.saldoRestante)}</strong></span></div>
+          <div class="avance-legend-item"><div class="avance-dot" style="background:#1D9E75;"></div><span>Esta semana: <strong>${fmt(calc.pagoSemana)}</strong></span></div>
+          <div class="avance-legend-item"><div class="avance-dot" style="background:var(--surface2);border:1px solid var(--border);"></div><span>Saldo restante: <strong>${fmt(calc.saldoRestante)}</strong></span></div>
         </div>
-      </div>
+      </div>`}
     </div>`;
   }).join('');
   updateTablaInst();
 }
+
 function updateTablaInst(){
   const tbody=document.getElementById('tbody-inst');
-  if(!instData.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty">Agrega instaladores arriba</div></td></tr>';return;}
+  const activos=instData.filter(r=>r.activo!==false);
+  if(!activos.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty">Sin datos</div></td></tr>';return;}
   let tYap=0,tPago=0;
-  tbody.innerHTML=instData.map(r=>{const c=calcI(r);tYap+=r.yaPagado;tPago+=c.pagoSemana;
+  tbody.innerHTML=activos.map(r=>{const c=calcI(r);tYap+=r.yaPagado;tPago+=c.pagoSemana;
     const srClass=c.saldoRestante<r.valorProyecto*0.1?'text-red':c.saldoRestante<r.valorProyecto*0.3?'text-orange':'';
-    return`<tr><td>${r.nombre||'—'}</td><td>${r.proyecto||'—'}</td><td>${fmt(r.yaPagado)}</td><td>${fmt(c.saldo)}</td><td>${r.porcentaje}%</td><td>${fmt(c.pagoSemana)}</td><td class="${srClass}">${fmt(c.saldoRestante)}</td></tr>`;
+    return`<tr><td>${r.nombre}</td><td>${r.proyecto||'—'}</td><td>${fmt(r.yaPagado)}</td><td>${fmt(c.saldo)}</td><td>${r.porcentaje}%</td><td>${fmt(c.pagoSemana)}</td><td class="${srClass}">${fmt(c.saldoRestante)}</td></tr>`;
   }).join('')+`<tr class="tfoot"><td colspan="2">Totales</td><td>${fmt(tYap)}</td><td></td><td></td><td>${fmt(tPago)}</td><td></td></tr>`;
 }
 
@@ -503,8 +618,8 @@ function updateResumen(){
   document.getElementById('m-emp').textContent=t.empCount;
   const tbody=document.getElementById('tbody-full');
   const rows=[
-    ...retoqueData.map(r=>{const c=calcR(r);return`<tr><td>${r.nombre||'—'}</td><td><span class="badge badge-r">Retoque</span></td><td>${r.dias} días × ${fmt(r.tarifa)}${c.extra>0?' + '+r.horas+'h extra':''}</td><td>${fmt(c.total)}</td></tr>`;}),
-    ...instData.map(r=>{const c=calcI(r);return`<tr><td>${r.nombre||'—'}</td><td><span class="badge badge-i">Instalador</span></td><td>${r.proyecto||'—'} — ${r.porcentaje}% de ${fmt(r.valorProyecto)}</td><td>${fmt(c.pagoSemana)}</td></tr>`;})
+    ...retoqueData.filter(r=>r.activo!==false).map(r=>{const c=calcR(r);return`<tr><td>${r.nombre}</td><td><span class="badge badge-r">Retoque</span></td><td>${r.dias} días × ${fmt(r.tarifa)}${c.extra>0?' + '+r.horas+'h extra':''}</td><td>${fmt(c.total)}</td></tr>`;}),
+    ...instData.filter(r=>r.activo!==false).map(r=>{const c=calcI(r);return`<tr><td>${r.nombre}</td><td><span class="badge badge-i">Instalador</span></td><td>${r.proyecto||'—'} — ${r.porcentaje}% de ${fmt(r.valorProyecto)}</td><td>${fmt(c.pagoSemana)}</td></tr>`;})
   ];
   tbody.innerHTML=rows.length?rows.join('')+`<tr class="tfoot"><td colspan="3">Total general a pagar</td><td>${fmt(t.total)}</td></tr>`:'<tr><td colspan="4"><div class="empty">Sin datos aún</div></td></tr>';
 }
@@ -516,34 +631,50 @@ async function guardarSemana(){
   const t=totales();
   const fecha=new Date().toLocaleDateString('es-GT');
   try{
-    // Hoja Retoque
-    for(const r of retoqueData){
+    for(const r of retoqueData.filter(r=>r.activo!==false)){
       const c=calcR(r);
-      await sheetsRequest('APPEND','Retoque!A:I',[
-        [semana,fecha,r.nombre||'—',r.dias,r.tarifa,c.sub,r.horas,r.tarifaHora,c.total]
-      ]);
+      await sheetsAppend('Retoque!A:I',[[semana,fecha,r.nombre,r.dias,r.tarifa,c.sub,r.horas,r.tarifaHora,c.total]]);
     }
-    // Hoja Instaladores
-    for(const r of instData){
+    for(const r of instData.filter(r=>r.activo!==false)){
       const c=calcI(r);
-      await sheetsRequest('APPEND','Instaladores!A:I',[
-        [semana,fecha,r.nombre||'—',r.proyecto||'—',r.valorProyecto,r.yaPagado,r.porcentaje,c.pagoSemana,c.saldoRestante]
-      ]);
+      await sheetsAppend('Instaladores!A:I',[[semana,fecha,r.nombre,r.proyecto||'—',r.valorProyecto,r.yaPagado,r.porcentaje,c.pagoSemana,c.saldoRestante]]);
     }
-    // Hoja Resumen
-    await sheetsRequest('APPEND','Resumen!A:F',[
-      [semana,fecha,t.tR,t.tI,t.total,t.empCount]
-    ]);
-    // guardar localmente para comparativo
+    await sheetsAppend('Resumen!A:F',[[semana,fecha,t.tR,t.tI,t.total,t.empCount]]);
     semanaAnterior={semana,tR:t.tR,tI:t.tI,total:t.total,empCount:t.empCount};
-    try{localStorage.setItem('planilla_v8_anterior',JSON.stringify(semanaAnterior));}catch(e){}
+    try{localStorage.setItem('planilla_v9_anterior',JSON.stringify(semanaAnterior));}catch(e){}
+    // guardar datos semanales localmente para no perderlos
+    guardarLocal();
     setSyncStatus('ok','Guardado en Google Sheets ✓');
     setTimeout(()=>setSyncStatus('ok','Listo'),3000);
-  }catch(err){
-    setSyncStatus('error','Error al guardar: '+err.message);
-    console.error(err);
-  }
+  }catch(err){setSyncStatus('error','Error: '+err.message);}
 }
+
+// ── GUARDAR/CARGAR LOCAL ──────────────────────────────────────
+function guardarLocal(){
+  try{
+    localStorage.setItem('planilla_v9_retoque',JSON.stringify(retoqueData));
+    localStorage.setItem('planilla_v9_inst',JSON.stringify(instData));
+    localStorage.setItem('planilla_v9_semana_ini',document.getElementById('semana-inicio').value);
+    localStorage.setItem('planilla_v9_semana_fin',document.getElementById('semana-fin').value);
+  }catch(e){}
+}
+function cargarLocal(){
+  try{
+    const r=localStorage.getItem('planilla_v9_retoque');
+    const i=localStorage.getItem('planilla_v9_inst');
+    const ini=localStorage.getItem('planilla_v9_semana_ini');
+    const fin=localStorage.getItem('planilla_v9_semana_fin');
+    if(r)retoqueData=JSON.parse(r);
+    if(i)instData=JSON.parse(i);
+    if(ini)document.getElementById('semana-inicio').value=ini;
+    if(fin)document.getElementById('semana-fin').value=fin;
+    return !!(r||i);
+  }catch(e){return false;}
+}
+
+// auto-guardar cada vez que hay cambios
+function autoGuardar(){guardarLocal();}
+document.addEventListener('input',autoGuardar);
 
 // ── HISTORIAL ─────────────────────────────────────────────────
 async function cargarHistorial(){
@@ -551,12 +682,10 @@ async function cargarHistorial(){
   lista.innerHTML='<div class="empty">Cargando...</div>';
   setSyncStatus('saving','Cargando historial...');
   try{
-    const data=await sheetsRequest('GET','Resumen!A:F');
-    const rows=data.values||[];
-    if(rows.length<=1){lista.innerHTML='<div class="empty">No hay semanas guardadas aún.</div>';setSyncStatus('ok','Listo');return;}
-    // skip header if exists
-    const items=rows.filter(r=>r[0]&&r[0]!=='Semana').reverse();
-    lista.innerHTML=items.map((r,i)=>`
+    const data=await sheetsGet('Resumen!A:F');
+    const rows=(data.values||[]).filter(r=>r[0]&&r[0]!=='Semana').reverse();
+    if(!rows.length){lista.innerHTML='<div class="empty">No hay semanas guardadas aún.</div>';setSyncStatus('ok','Listo');return;}
+    lista.innerHTML=rows.map(r=>`
       <div class="historial-row" onclick="verDetalleSemana('${r[0]}')">
         <div>
           <div class="historial-semana">${r[0]||'—'}</div>
@@ -569,52 +698,44 @@ async function cargarHistorial(){
         </div>
       </div>`).join('');
     setSyncStatus('ok','Listo');
-  }catch(err){
-    lista.innerHTML='<div class="empty">Error al cargar historial.</div>';
-    setSyncStatus('error','Error: '+err.message);
-  }
+  }catch(err){lista.innerHTML='<div class="empty">Error al cargar.</div>';setSyncStatus('error','Error: '+err.message);}
 }
 
 async function verDetalleSemana(semana){
   const det=document.getElementById('historial-detalle');
   det.innerHTML='<div class="card"><div class="empty">Cargando detalle...</div></div>';
   try{
-    const [retData,instDataH]=await Promise.all([
-      sheetsRequest('GET','Retoque!A:I'),
-      sheetsRequest('GET','Instaladores!A:I')
-    ]);
+    const [retData,instDataH]=await Promise.all([sheetsGet('Retoque!A:I'),sheetsGet('Instaladores!A:I')]);
     const retRows=(retData.values||[]).filter(r=>r[0]===semana);
     const instRows=(instDataH.values||[]).filter(r=>r[0]===semana);
     det.innerHTML=`<div class="card">
       <div class="card-title">Detalle: ${semana}</div>
       <p class="sub-label" style="margin-bottom:8px">Retoque</p>
-      <table><thead><tr><th>Nombre</th><th>Días</th><th>Q/día</th><th>Subtotal</th><th>Hs. extra</th><th>Q/hora</th><th>Extra</th><th>Total</th></tr></thead>
+      <table><thead><tr><th>Nombre</th><th>Días</th><th>Q/día</th><th>Subtotal</th><th>Hs.extra</th><th>Q/hora</th><th>Extra</th><th>Total</th></tr></thead>
       <tbody>${retRows.length?retRows.map(r=>`<tr><td>${r[2]}</td><td>${r[3]}</td><td>${fmt(+r[4])}</td><td>${fmt(+r[5])}</td><td>${r[6]}</td><td>${fmt(+r[7])}</td><td>${fmt(+r[8]-+r[5])}</td><td>${fmt(+r[8])}</td></tr>`).join(''):'<tr><td colspan="8"><div class="empty">Sin datos</div></td></tr>'}</tbody></table>
       <p class="sub-label" style="margin:12px 0 8px">Instaladores</p>
       <table><thead><tr><th>Nombre</th><th>Proyecto</th><th>Valor proy.</th><th>Ya pagado</th><th>%</th><th>Pago semana</th><th>Saldo rest.</th></tr></thead>
       <tbody>${instRows.length?instRows.map(r=>`<tr><td>${r[2]}</td><td>${r[3]}</td><td>${fmt(+r[4])}</td><td>${fmt(+r[5])}</td><td>${r[6]}%</td><td>${fmt(+r[7])}</td><td>${fmt(+r[8])}</td></tr>`).join(''):'<tr><td colspan="7"><div class="empty">Sin datos</div></td></tr>'}</tbody></table>
     </div>`;
-  }catch(err){det.innerHTML='<div class="card"><div class="empty">Error al cargar detalle.</div></div>';}
+  }catch(e){det.innerHTML='<div class="card"><div class="empty">Error al cargar detalle.</div></div>';}
 }
 
 // ── EXCEL ─────────────────────────────────────────────────────
 function exportarExcelRetoque(){
-  const semana=getSemana();
-  const wb=XLSX.utils.book_new();
+  const semana=getSemana();const wb=XLSX.utils.book_new();
   const rows=[['PLANILLA RETOCADORES — '+semana],[''],['Nombre','Días','Q/día','Subtotal días','Horas extra','Q/hora','Subtotal extras','Total']];
   let tS=0,tE=0,tT=0;
-  retoqueData.forEach(r=>{const c=calcR(r);tS+=c.sub;tE+=c.extra;tT+=c.total;rows.push([r.nombre||'—',r.dias,r.tarifa,c.sub,r.horas,r.tarifaHora,c.extra,c.total]);});
+  retoqueData.filter(r=>r.activo!==false).forEach(r=>{const c=calcR(r);tS+=c.sub;tE+=c.extra;tT+=c.total;rows.push([r.nombre,r.dias,r.tarifa,c.sub,r.horas,r.tarifaHora,c.extra,c.total]);});
   rows.push(['','','TOTAL',tS,'','',tE,tT]);
   const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:22},{wch:8},{wch:10},{wch:14},{wch:12},{wch:10},{wch:14},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws,'Retocadores');
   XLSX.writeFile(wb,'retocadores_'+(semana.replace(/ /g,'_').replace(/\//g,'-'))+'.xlsx');
 }
 function exportarExcelInstaladores(){
-  const semana=getSemana();
-  const wb=XLSX.utils.book_new();
+  const semana=getSemana();const wb=XLSX.utils.book_new();
   const rows=[['PLANILLA INSTALADORES — '+semana],[''],['Nombre','Proyecto','Ya pagado','Saldo','% semana','Pago semana','Saldo restante']];
   let tYap=0,tPago=0;
-  instData.forEach(r=>{const c=calcI(r);tYap+=r.yaPagado;tPago+=c.pagoSemana;rows.push([r.nombre||'—',r.proyecto||'—',r.yaPagado,c.saldo,r.porcentaje/100,c.pagoSemana,c.saldoRestante]);});
+  instData.filter(r=>r.activo!==false).forEach(r=>{const c=calcI(r);tYap+=r.yaPagado;tPago+=c.pagoSemana;rows.push([r.nombre,r.proyecto||'—',r.yaPagado,c.saldo,r.porcentaje/100,c.pagoSemana,c.saldoRestante]);});
   rows.push(['','TOTAL',tYap,'','',tPago,'']);
   const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:22},{wch:24},{wch:14},{wch:14},{wch:12},{wch:14},{wch:16}];
   XLSX.utils.book_append_sheet(wb,ws,'Instaladores');
@@ -623,9 +744,9 @@ function exportarExcelInstaladores(){
 function exportarTxt(){
   const semana=getSemana();const t=totales();
   let txt=`PLANILLA SEMANAL\nSemana: ${semana}\n\n=== RETOQUE ===\n`;
-  retoqueData.forEach(r=>{const c=calcR(r);txt+=`${r.nombre||'—'}: ${r.dias} días × Q${q(r.tarifa)}${c.extra>0?' + '+r.horas+'h extra × Q'+q(r.tarifaHora):''} → Q${q(c.total)}\n`;});
+  retoqueData.filter(r=>r.activo!==false).forEach(r=>{const c=calcR(r);txt+=`${r.nombre}: ${r.dias} días × Q${q(r.tarifa)}${c.extra>0?' + '+r.horas+'h extra × Q'+q(r.tarifaHora):''} → Q${q(c.total)}\n`;});
   txt+=`Subtotal retoque: Q${q(t.tR)}\n\n=== INSTALADORES ===\n`;
-  instData.forEach(r=>{const c=calcI(r);txt+=`${r.nombre||'—'} (${r.proyecto||'—'}): ${r.porcentaje}% → Q${q(c.pagoSemana)} | Saldo: Q${q(c.saldoRestante)}\n`;});
+  instData.filter(r=>r.activo!==false).forEach(r=>{const c=calcI(r);txt+=`${r.nombre} (${r.proyecto||'—'}): ${r.porcentaje}% → Q${q(c.pagoSemana)} | Saldo: Q${q(c.saldoRestante)}\n`;});
   txt+=`Subtotal instaladores: Q${q(t.tI)}\n\nTOTAL: Q${q(t.total)}`;
   const blob=new Blob([txt],{type:'text/plain'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`planilla_${semana.replace(/ /g,'_').replace(/\//g,'-')}.txt`;a.click();
@@ -633,8 +754,7 @@ function exportarTxt(){
 
 // ── COMPARATIVO ───────────────────────────────────────────────
 function deltaChip(a,ant){
-  if(!ant||ant===0)return'';
-  const d=a-ant,p=Math.round((d/ant)*100);
+  if(!ant||ant===0)return'';const d=a-ant,p=Math.round((d/ant)*100);
   if(d===0)return`<span class="delta delta-flat">= igual</span>`;
   return d>0?`<span class="delta delta-up">▲ ${p}%</span>`:`<span class="delta delta-down">▼ ${Math.abs(p)}%</span>`;
 }
@@ -648,7 +768,7 @@ function barPair(label,vA,vAnt){
 function renderComp(){
   const cont=document.getElementById('comp-content');
   const semActual=getSemana();const t=totales();
-  if(!semanaAnterior){cont.innerHTML=`<div class="card"><div class="empty">Aún no hay semana anterior guardada.<br>Guarda la semana actual desde el Resumen y aparecerá aquí la próxima semana.</div></div>`;return;}
+  if(!semanaAnterior){cont.innerHTML=`<div class="card"><div class="empty">Guarda la semana actual desde el Resumen y aparecerá aquí la próxima semana.</div></div>`;return;}
   const ant=semanaAnterior;
   cont.innerHTML=`
     <div class="cmp-grid">
@@ -685,7 +805,20 @@ function renderComp(){
 }
 
 // ── INIT ──────────────────────────────────────────────────────
-setSyncStatus('ok','Listo');
+async function init(){
+  setSyncStatus('saving','Cargando...');
+  // 1. cargar datos locales primero (instantáneo)
+  const hayLocal=cargarLocal();
+  // 2. cargar empleados fijos desde Sheets
+  await cargarEmpleadosFijos();
+  // 3. si había datos locales, re-renderizar con esos datos
+  if(hayLocal){
+    renderRetoque();
+    renderInst();
+  }
+  setSyncStatus('ok','Listo');
+}
+init();
 </script>
 </body>
 </html>
