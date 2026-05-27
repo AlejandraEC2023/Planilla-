@@ -5,150 +5,152 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Planilla Semanal</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsrsasign@10.5.27/lib/jsrsasign-all-min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #F5F4F0;
-    --surface: #FFFFFF;
-    --surface2: #EEECEA;
-    --border: #D8D5D0;
-    --border2: #C8C4BE;
-    --text: #1A1916;
-    --text2: #6B6760;
-    --text3: #9B9890;
-    --green: #1A7A5E;
-    --green-bg: #E6F5F0;
-    --blue: #1A5C8A;
-    --blue-bg: #E6EFF8;
-    --red: #8A2A1A;
-    --red-bg: #F8EBE6;
-    --accent: #1A7A5E;
-    --radius: 10px;
-    --radius-sm: 6px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-  
-  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
-  .logo { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
-  .logo span { color: var(--accent); }
-  .semana-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .semana-label { font-size: 13px; color: var(--text2); }
-  .semana-input { padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Mono', monospace; background: var(--bg); color: var(--text); width: 120px; }
-  .semana-input:focus { outline: none; border-color: var(--accent); }
-
-  .container { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1.5rem; }
-
-  .tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px; width: fit-content; }
-  .tab { padding: 7px 18px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); border: none; background: transparent; transition: all 0.15s; }
-  .tab:hover { color: var(--text); }
-  .tab.active { background: var(--text); color: #fff; }
-
-  .section { display: none; }
-  .section.active { display: block; }
-
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
-  .card-title { font-size: 14px; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
-
-  .emp-block { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.75rem; background: var(--bg); }
-  .emp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .emp-name { font-size: 14px; font-weight: 600; border: none; background: transparent; color: var(--text); border-bottom: 1.5px solid var(--border); padding: 2px 4px; width: 220px; font-family: 'DM Sans', sans-serif; }
-  .emp-name:focus { outline: none; border-bottom-color: var(--accent); }
-
-  .fields { display: grid; gap: 10px; }
-  .f4 { grid-template-columns: repeat(4, 1fr); }
-  .f5 { grid-template-columns: repeat(5, 1fr); }
-  @media (max-width: 680px) { .f4, .f5 { grid-template-columns: repeat(2, 1fr); } }
-
-  .field label { font-size: 11px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
-  .field input { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Mono', monospace; background: var(--surface); color: var(--text); }
-  .field input:focus { outline: none; border-color: var(--accent); }
-  .field-display { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Mono', monospace; background: var(--surface2); color: var(--text); font-weight: 500; min-height: 34px; }
-
-  .emp-footer { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-  .emp-footer-label { font-size: 12px; color: var(--text2); }
-  .emp-footer-val { font-size: 14px; font-weight: 600; font-family: 'DM Mono', monospace; }
-
-  .btn { padding: 7px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); transition: all 0.15s; }
-  .btn:hover { background: var(--surface2); }
-  .btn-del { color: var(--red); border-color: #E8C4BC; background: var(--red-bg); padding: 6px 10px; }
-  .btn-del:hover { background: #F0D0C8; }
-  .btn-add { margin-top: 4px; }
-  .btn-primary { background: var(--text); color: #fff; border-color: var(--text); }
-  .btn-primary:hover { background: #333; }
-  .btn-excel { background: var(--green-bg); color: var(--green); border-color: #A8D8C8; }
-  .btn-excel:hover { background: #C8EDE4; }
-  .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text2); padding: 7px 10px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.4px; }
-  td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 12px; }
-  td:first-child { font-family: 'DM Sans', sans-serif; font-size: 13px; }
-  tr:last-child td { border-bottom: none; }
-  .tfoot td { font-weight: 600; background: var(--surface2); font-family: 'DM Mono', monospace; }
-  .tfoot td:first-child { font-family: 'DM Sans', sans-serif; }
-
-  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
-  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
-  .metric-label { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
-  .metric-val { font-size: 20px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--text); }
-
-  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
-  .badge-r { background: var(--green-bg); color: var(--green); }
-  .badge-i { background: var(--blue-bg); color: var(--blue); }
-
-  .save-banner { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.875rem 1.25rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px; }
-  .save-text { font-size: 13px; color: var(--text2); }
-
-  .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem; }
-  @media (max-width: 580px) { .cmp-grid { grid-template-columns: 1fr; } }
-  .cmp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
-  .cmp-card.highlight { border-color: var(--accent); }
-  .cmp-week-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
-  .cmp-week-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 1rem; }
-  .cmp-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-  .cmp-row:last-child { border-bottom: none; font-weight: 600; font-size: 14px; }
-  .cmp-row-label { color: var(--text2); }
-  .cmp-row-val { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; }
-  .cmp-row:last-child .cmp-row-val { font-size: 15px; }
-
-  .delta { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
-  .delta-up { background: var(--green-bg); color: var(--green); }
-  .delta-down { background: var(--red-bg); color: var(--red); }
-  .delta-flat { background: var(--surface2); color: var(--text2); }
-
-  .bar-wrap { margin-bottom: 1rem; }
-  .bar-title { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.4px; }
-  .bar-row { margin-bottom: 6px; }
-  .bar-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 3px; }
-  .bar-meta span:last-child { font-family: 'DM Mono', monospace; font-weight: 500; }
-  .bar-track { height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
-  .bar-actual { background: var(--green); }
-  .bar-anterior { background: var(--blue); }
-
-  .empty-state { text-align: center; padding: 2.5rem; color: var(--text3); font-size: 13px; }
-  .empty-state svg { display: block; margin: 0 auto 0.75rem; opacity: 0.3; }
-
-  .hint { font-size: 12px; color: var(--text3); margin-bottom: 0.875rem; }
-  .text-green { color: var(--green); }
-  .text-red { color: var(--red); }
-  .text-muted { color: var(--text2); }
-  .mono { font-family: 'DM Mono', monospace; }
+  :root{--bg:#F5F4F0;--surface:#FFF;--surface2:#EEECEA;--border:#D8D5D0;--text:#1A1916;--text2:#6B6760;--text3:#9B9890;--green:#1D9E75;--green-bg:#E1F5EE;--green-dark:#0F6E56;--blue:#378ADD;--blue-bg:#E6F1FB;--blue-dark:#185FA5;--red:#A32D2D;--red-bg:#FCEBEB;--orange:#B85C00;--orange-bg:#FFF3E0;--radius:10px;--radius-sm:6px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .logo{font-size:18px;font-weight:600;letter-spacing:-.3px;}.logo span{color:var(--green);}
+  .semana-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .semana-label{font-size:13px;color:var(--text2);}
+  .si{padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);width:122px;}
+  .si:focus{outline:none;border-color:var(--green);}
+  .sync-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  .sync-status{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px;}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);}
+  .sync-dot.ok{background:var(--green);}
+  .sync-dot.saving{background:#F4A623;animation:pulse 1s infinite;}
+  .sync-dot.error{background:var(--red);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+  .container{max-width:1060px;margin:0 auto;padding:1.5rem;}
+  .tabs{display:flex;gap:6px;margin-bottom:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:5px;width:fit-content;flex-wrap:wrap;}
+  .tab{padding:7px 18px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);border:none;background:transparent;transition:all .15s;}
+  .tab:hover{color:var(--text);}.tab.active{background:var(--text);color:#fff;}
+  .section{display:none;}.section.active{display:block;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;}
+  .card-title{font-size:14px;font-weight:600;margin-bottom:.875rem;display:flex;align-items:center;gap:8px;}
+  .emp-block{border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:.75rem;background:var(--bg);}
+  .inst-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap;}
+  .inst-header-left{display:flex;flex-direction:column;gap:6px;flex:1;}
+  .inst-name-row{display:flex;align-items:center;gap:10px;}
+  .emp-name{font-size:14px;font-weight:600;border:none;background:transparent;color:var(--text);border-bottom:1.5px solid var(--border);padding:2px 4px;width:200px;font-family:'DM Sans',sans-serif;}
+  .emp-name:focus{outline:none;border-bottom-color:var(--green);}
+  .inst-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .inst-meta-item{display:flex;align-items:center;gap:6px;}
+  .inst-meta-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
+  .inst-meta-input{padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Mono',monospace;background:var(--surface);color:var(--text);width:140px;}
+  .inst-meta-input:focus{outline:none;border-color:var(--green);}
+  .inst-meta-input.proyecto{width:190px;font-family:'DM Sans',sans-serif;}
+  .emp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .fields{display:grid;gap:10px;}
+  .f2{grid-template-columns:repeat(2,1fr);}.f3{grid-template-columns:repeat(3,1fr);}.f4{grid-template-columns:repeat(4,1fr);}
+  @media(max-width:680px){.f2,.f3,.f4{grid-template-columns:repeat(2,1fr);}}
+  .field label{font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+  .field input{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Mono',monospace;background:var(--surface);color:var(--text);}
+  .field input:focus{outline:none;border-color:var(--green);}
+  .field-display{padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'DM Mono',monospace;background:var(--surface2);color:var(--text);font-weight:500;min-height:34px;display:flex;align-items:center;}
+  .field-display.ok{background:var(--green-bg);color:var(--green-dark);border-color:#9FE1CB;}
+  .field-display.warn{background:var(--orange-bg);color:var(--orange);border-color:#FFCC80;}
+  .field-display.over{background:var(--red-bg);color:var(--red);border-color:#F5B8B8;}
+  .sub-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 8px;}
+  .divider{border:none;border-top:1px dashed var(--border);margin:10px 0;}
+  .emp-footer{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap;}
+  .emp-footer-label{font-size:12px;color:var(--text2);}
+  .emp-footer-val{font-size:14px;font-weight:700;font-family:'DM Mono',monospace;}
+  .avance-wrap{margin-top:12px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);}
+  .avance-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;}
+  .avance-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .avance-bar-label{font-size:11px;color:var(--text2);width:80px;text-align:right;flex-shrink:0;}
+  .avance-track{flex:1;height:22px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+  .avance-legend{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;}
+  .avance-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+  .avance-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+  .btn{padding:7px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);transition:all .15s;}
+  .btn:hover{background:var(--surface2);}
+  .btn-del{color:var(--red);border-color:#F0C4C4;background:var(--red-bg);padding:6px 10px;}
+  .btn-del:hover{background:#F5D0D0;}
+  .btn-add{margin-top:4px;}
+  .btn-primary{background:var(--text);color:#fff;border-color:var(--text);}
+  .btn-primary:hover{background:#333;}
+  .btn-green{background:var(--green-bg);color:var(--green-dark);border-color:#9FE1CB;}
+  .btn-green:hover{background:#C8EDE4;}
+  .btn-blue{background:var(--blue-bg);color:var(--blue-dark);border-color:#A8CBF0;}
+  .btn-blue:hover{background:#C8DCEF;}
+  .btn-group{display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:11px;font-weight:700;color:var(--text2);padding:7px 8px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.4px;}
+  td{padding:8px 8px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;}
+  td:first-child{font-family:'DM Sans',sans-serif;font-size:13px;}
+  tr:last-child td{border-bottom:none;}
+  .tfoot td{font-weight:700;background:var(--surface2);font-family:'DM Mono',monospace;}
+  .tfoot td:first-child{font-family:'DM Sans',sans-serif;}
+  .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.5rem;}
+  .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;}
+  .metric-label{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;}
+  .metric-val{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;}
+  .badge-r{background:var(--green-bg);color:var(--green-dark);}
+  .badge-i{background:var(--blue-bg);color:var(--blue-dark);}
+  .save-banner{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px;}
+  .save-text{font-size:13px;color:var(--text2);}
+  .hint{font-size:12px;color:var(--text3);margin-bottom:.875rem;}
+  .cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.5rem;}
+  @media(max-width:580px){.cmp-grid{grid-template-columns:1fr;}}
+  .cmp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;}
+  .cmp-card.hl{border-color:var(--green);border-width:2px;}
+  .cmp-week-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+  .cmp-week-title{font-size:14px;font-weight:700;margin-bottom:1rem;}
+  .cmp-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .cmp-row:last-child{border-bottom:none;font-weight:700;font-size:14px;}
+  .cmp-row-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;}
+  .delta{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;}
+  .delta-up{background:var(--green-bg);color:var(--green-dark);}
+  .delta-down{background:var(--red-bg);color:var(--red);}
+  .delta-flat{background:var(--surface2);color:var(--text2);}
+  .bar-wrap{margin-bottom:1rem;}
+  .bar-title{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;}
+  .bar-row{margin-bottom:5px;}
+  .bar-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:3px;}
+  .bar-meta span:last-child{font-family:'DM Mono',monospace;font-weight:500;}
+  .bar-track{height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+  .bar-fill-cmp{height:100%;border-radius:4px;}
+  .bar-actual{background:var(--green);}
+  .bar-anterior{background:var(--blue);}
+  .empty{text-align:center;padding:2rem;color:var(--text3);font-size:13px;}
+  .text-green{color:var(--green-dark);}
+  .text-red{color:var(--red);}
+  .text-orange{color:var(--orange);}
+  .historial-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer;transition:background .1s;}
+  .historial-row:hover{background:var(--surface2);}
+  .historial-row:last-child{border-bottom:none;}
+  .historial-semana{font-weight:500;}
+  .historial-totales{display:flex;gap:16px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);}
+  .historial-fecha{font-size:11px;color:var(--text3);}
 </style>
 </head>
 <body>
-
 <header>
   <div class="logo">Planilla <span>Semanal</span></div>
   <div class="semana-header">
     <span class="semana-label">Del</span>
-    <input class="semana-input" type="text" id="semana-inicio" placeholder="dd/mm/aaaa">
+    <input class="si" type="text" id="semana-inicio" placeholder="dd/mm/aaaa">
     <span class="semana-label">al</span>
-    <input class="semana-input" type="text" id="semana-fin" placeholder="dd/mm/aaaa">
+    <input class="si" type="text" id="semana-fin" placeholder="dd/mm/aaaa">
   </div>
 </header>
+<div class="sync-bar">
+  <div class="sync-status">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-text">Listo</span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span style="font-size:12px;color:var(--text2);">Google Sheets conectado</span>
+    <a href="https://docs.google.com/spreadsheets/d/1fhPuu_A_EUq3hnlBj20fxcDyVm2QQKjkI5tZuZQePno/edit" target="_blank" style="font-size:12px;color:var(--blue-dark);text-decoration:none;">Ver hoja ↗</a>
+  </div>
+</div>
 
 <div class="container">
   <div class="tabs">
@@ -156,64 +158,73 @@
     <button class="tab" onclick="showTab('inst')">⚙ Instaladores</button>
     <button class="tab" onclick="showTab('resumen')">◈ Resumen</button>
     <button class="tab" onclick="showTab('comp')">⇄ Comparativo</button>
+    <button class="tab" onclick="showTab('historial')">📋 Historial</button>
   </div>
 
   <!-- RETOQUE -->
   <div class="section active" id="sec-retoque">
     <div class="card">
       <div class="card-title">Personal de retoque <span class="badge badge-r">Pago por día</span></div>
-      <p class="hint">Registra días trabajados, tarifa diaria y cualquier extra (bonos, horas adicionales).</p>
+      <p class="hint">Días trabajados, tarifa diaria y horas extra.</p>
       <div id="retoque-rows"></div>
-      <button class="btn btn-add" onclick="addRetoque()">+ Agregar empleado</button>
+      <button class="btn btn-add" onclick="addRetoque()">+ Agregar retocador</button>
     </div>
     <div class="card">
       <div class="card-title">Resumen retoque</div>
       <table>
-        <thead><tr><th>Nombre</th><th>Días</th><th>Q / día</th><th>Subtotal</th><th>Extras</th><th>Total</th></tr></thead>
-        <tbody id="tbody-retoque"><tr><td colspan="6"><div class="empty-state">Sin empleados aún</div></td></tr></tbody>
+        <thead><tr><th>Nombre</th><th>Días</th><th>Q/día</th><th>Subtotal</th><th>Hs. extra</th><th>Q/hora</th><th>Extra</th><th>Total</th></tr></thead>
+        <tbody id="tbody-retoque"><tr><td colspan="8"><div class="empty">Agrega retocadores arriba</div></td></tr></tbody>
       </table>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-green" onclick="exportarExcelRetoque()">⬇ Excel retocadores</button>
     </div>
   </div>
 
   <!-- INSTALADORES -->
   <div class="section" id="sec-inst">
     <div class="card">
-      <div class="card-title">Instaladores <span class="badge badge-i">Pago por trato</span></div>
-      <p class="hint">Registra tratos completados, valor por trato, anticipos y descuentos a restar.</p>
+      <div class="card-title">Instaladores <span class="badge badge-i">% del valor del proyecto</span></div>
+      <p class="hint">Proyecto y valor total en el encabezado. Ingresa lo ya pagado y el % de esta semana.</p>
       <div id="inst-rows"></div>
       <button class="btn btn-add" onclick="addInst()">+ Agregar instalador</button>
     </div>
     <div class="card">
       <div class="card-title">Resumen instaladores</div>
-      <table>
-        <thead><tr><th>Nombre</th><th>Tratos</th><th>Q / trato</th><th>Subtotal</th><th>Anticipo</th><th>Desc.</th><th>A pagar</th></tr></thead>
-        <tbody id="tbody-inst"><tr><td colspan="7"><div class="empty-state">Sin instaladores aún</div></td></tr></tbody>
-      </table>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Nombre</th><th>Proyecto</th><th>Ya pagado</th><th>Saldo</th><th>%</th><th>Pago semana</th><th>Saldo restante</th></tr></thead>
+          <tbody id="tbody-inst"><tr><td colspan="7"><div class="empty">Agrega instaladores arriba</div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-blue" onclick="exportarExcelInstaladores()">⬇ Excel instaladores</button>
     </div>
   </div>
 
   <!-- RESUMEN -->
   <div class="section" id="sec-resumen">
     <div class="save-banner">
-      <span class="save-text">💾 Guarda la semana para poder comparar con la siguiente.</span>
-      <button class="btn btn-primary" onclick="guardarSemana()">Guardar semana actual</button>
+      <span class="save-text">💾 Guarda la semana — se guardará en Google Sheets y localmente.</span>
+      <button class="btn btn-primary" onclick="guardarSemana()">Guardar semana en Sheets</button>
     </div>
     <div class="metric-grid">
       <div class="metric"><div class="metric-label">Total retoque</div><div class="metric-val" id="m-retoque">Q 0</div></div>
       <div class="metric"><div class="metric-label">Total instaladores</div><div class="metric-val" id="m-inst">Q 0</div></div>
-      <div class="metric"><div class="metric-label">Desc. / anticipos</div><div class="metric-val" id="m-desc">Q 0</div></div>
       <div class="metric"><div class="metric-label">Total a pagar</div><div class="metric-val" id="m-total">Q 0</div></div>
       <div class="metric"><div class="metric-label">Empleados</div><div class="metric-val" id="m-emp">0</div></div>
     </div>
     <div class="card">
       <div class="card-title">Detalle completo</div>
       <table>
-        <thead><tr><th>Nombre</th><th>Tipo</th><th>Bruto</th><th>Ajustes</th><th>A pagar</th></tr></thead>
-        <tbody id="tbody-full"><tr><td colspan="5"><div class="empty-state">Sin datos aún</div></td></tr></tbody>
+        <thead><tr><th>Nombre</th><th>Tipo</th><th>Concepto</th><th>Total semana</th></tr></thead>
+        <tbody id="tbody-full"><tr><td colspan="4"><div class="empty">Sin datos aún</div></td></tr></tbody>
       </table>
     </div>
     <div class="btn-group">
-      <button class="btn btn-excel" onclick="exportarExcel()">⬇ Descargar Excel</button>
+      <button class="btn btn-green" onclick="exportarExcelRetoque()">⬇ Excel retocadores</button>
+      <button class="btn btn-blue" onclick="exportarExcelInstaladores()">⬇ Excel instaladores</button>
       <button class="btn" onclick="exportarTxt()">⬇ Exportar .txt</button>
     </div>
   </div>
@@ -222,326 +233,451 @@
   <div class="section" id="sec-comp">
     <div id="comp-content"></div>
   </div>
+
+  <!-- HISTORIAL -->
+  <div class="section" id="sec-historial">
+    <div class="card">
+      <div class="card-title">Historial de semanas guardadas</div>
+      <p class="hint">Todas las semanas guardadas en Google Sheets. Click en una para ver el detalle.</p>
+      <div id="historial-list"><div class="empty">Cargando historial...</div></div>
+    </div>
+    <div id="historial-detalle"></div>
+  </div>
 </div>
 
 <script>
-let retoqueData = [];
-let instData = [];
-let semanaAnterior = null;
+// ── CONFIG ──────────────────────────────────────────────────
+const SHEET_ID = '1fhPuu_A_EUq3hnlBj20fxcDyVm2QQKjkI5tZuZQePno';
+const SERVICE_ACCOUNT = {
+  client_email: 'planilla-bot@planilla-semanal-ec.iam.gserviceaccount.com',
+  private_key: `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCpqvCilWwtt6+P
+xd/75SZVADaCrcPdExLnN9BObHdzWHTmQ9Boe4WidBhUWHJwvgzYShZtDKsjYL/a
+ALx/24avab+52OthlsEHy8djKJqmFfqpnjBl0mBqpJpz9hOu6faNxWdAXcvcKsYa
+08HOzEhZ7MFLPgQAotEZ3IOVObeyMOwa4vFMoRjPDvqagZ0AgdDVwCvjyGs/lNio
+G9kr01WpvfUg157sot+JsUxngDroo/JKwehsJeUCP0BFulBdMHNUAay9c0wgocEl
+D6IRTgWxGoL9gIpQ0EgQ9FWuG6387sJvu1qZvhsWzinRJ6IzM/KUbOkkFoVo8Y2O
+GTJfeKqzAgMBAAECggEAFAQWEmAlXHlcjU4PQATHEmUNiTodrrGG298yRGY4a1Om
+qtmaNxFHcSRYEG9ExPcuxb9ryN6jO++4gmvu0PiheYU0uKSWFDO4Pwaz1YdfQzO5
+mBQQ6po4hKw5im+f39U7IHuG1EmceLNVHqoXpaFk8bLkFM/Sog6TM4VXwp2GBc/d
+fddjqNEbeoh+sjl1/qCd9AKPtG8SoLfUXNIb+j/90N4ZvmYSfhD1U1xWV2j8QtNP
+GDQHpOf/HeO7lLI+cDPmbuOEk/6ww30Y4nkmHtqYtqCo7eum/cKAISCWBd8W1OmG
+fOsV0O2tvNndy1/E03Yw8qD3LY+WvwPnoR5zkeDXJQKBgQDYMSPNt1Scb+bGGIQC
+IUrGpcqa758KpuAHdj4te3FVdU6rCTlr2EyIJVr4MDYH77oxZIUJz0KY/cHfQcYG
+9xNUq2XxnC9sTCHqWlA1a6rVweCXjXm82Sk8HdhlaFsP/eY/a6YxUeIpX5Aghs1e
+/V2a25pd8dXbqXpB4/fh6k7B1QKBgQDI6L2dqGDsGeObgn+orSngGULOyg0qGixD
+dPeFTRVDYDGuon4q/uY659mTUWMkjwEZgTpGgGyPHxEKLvR/WwKgUBp7bGLCNMIu
+hJ3t4VzwfF4KztJOvJ+mZJ/EJy/dSdYepBLzm1l2sJVhC0HFJeCHAseGKZoJb6Vu
+bj7kmm72ZwKBgQCEZlPPAJ/Izp8+YnU1+L2aup5CFM4J7/jzmO6rXBYkiBsNlDCe
+Y3E7T+VOafgtFBurdCwlvdDDcWTyHY3xZg9ooy9jsIs6f8WliHnmvXF6R6oMJpCP
+n08pif2k3Swntw7zeDHnsoYXYHcb9HKB4hkZZbQ8JIccZ8Z/4+VDbgOdoQKBgQCo
+KzC0rAFc/5qmS8ihnzjDDUH/p973E+tjF6AsY0ZeHEHZ5MfpI24BdpqHloN/UXhh
+Ketmog68iguQU5dylvKO0B4qm6Ha36B+oaE0QgSyg9eQAmjFYVvdQrL81LRa7Xge
+M8ZtRObQ06RmE68c38SeHjR215HJPjviQMPCRIaHFwKBgDTBIbEtgMrfqpNR2js0
+SndQwHr6VimlQrUHEaQZP1tBB6sEMgYhIMyzoQY/SAH8HSTTwhFMXYSjvDQ6b1Lw
+AcnA1NwSD9KFkfC6HrmptN+muBH1MnjPnOlJNv/BUc7vMkJDo5ukXlAedVUjSE4I
+MHB/LzL9VnxI1zhKd0+LTusn
+-----END PRIVATE KEY-----`
+};
 
-try {
-  const s = localStorage.getItem('planilla_semana_anterior');
-  if (s) semanaAnterior = JSON.parse(s);
-} catch(e) {}
+// ── DATA ─────────────────────────────────────────────────────
+let retoqueData=[];
+let instData=[];
+let semanaAnterior=null;
+try{const s=localStorage.getItem('planilla_v8_anterior');if(s)semanaAnterior=JSON.parse(s);}catch(e){}
 
-function q(n) { return Number(n).toLocaleString('es-GT', {minimumFractionDigits:2, maximumFractionDigits:2}); }
-function fmt(n) { return 'Q ' + q(n); }
+// ── HELPERS ──────────────────────────────────────────────────
+function q(n){return Number(n).toLocaleString('es-GT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmt(n){return 'Q '+q(n);}
+function pct(n){return Number(n).toFixed(1)+'%';}
+function getSemana(){
+  const ini=document.getElementById('semana-inicio').value||'';
+  const fin=document.getElementById('semana-fin').value||'';
+  return ini&&fin?ini+' al '+fin:'Semana sin fecha';
+}
+function setSyncStatus(state,msg){
+  const dot=document.getElementById('sync-dot');
+  const txt=document.getElementById('sync-text');
+  dot.className='sync-dot '+state;
+  txt.textContent=msg;
+}
 
-function showTab(t) {
-  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
-  const map = {retoque:0, inst:1, resumen:2, comp:3};
+// ── GOOGLE AUTH ───────────────────────────────────────────────
+async function getAccessToken(){
+  const now=Math.floor(Date.now()/1000);
+  const header=btoa(JSON.stringify({alg:'RS256',typ:'JWT'}));
+  const claim=btoa(JSON.stringify({
+    iss:SERVICE_ACCOUNT.client_email,
+    scope:'https://www.googleapis.com/auth/spreadsheets',
+    aud:'https://oauth2.googleapis.com/token',
+    exp:now+3600,iat:now
+  }));
+  const sigInput=header+'.'+claim;
+  const sig=await signRS256(sigInput,SERVICE_ACCOUNT.private_key);
+  const jwt=sigInput+'.'+sig;
+  const res=await fetch('https://oauth2.googleapis.com/token',{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
+  });
+  const data=await res.json();
+  if(!data.access_token)throw new Error('No se pudo obtener token: '+JSON.stringify(data));
+  return data.access_token;
+}
+
+async function signRS256(input,pem){
+  const sig=new KJUR.crypto.Signature({alg:'SHA256withRSA'});
+  sig.init(pem);
+  sig.updateString(input);
+  const hexSig=sig.sign();
+  const bytes=new Uint8Array(hexSig.match(/.{1,2}/g).map(b=>parseInt(b,16)));
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+async function sheetsRequest(method,range,body){
+  const token=await getAccessToken();
+  const base=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
+  let url,opts;
+  if(method==='GET'){
+    url=`${base}/values/${encodeURIComponent(range)}`;
+    opts={headers:{Authorization:'Bearer '+token}};
+  } else {
+    url=`${base}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+    opts={method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({values:body})};
+  }
+  const res=await fetch(url,opts);
+  return res.json();
+}
+
+// ── TABS ─────────────────────────────────────────────────────
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(el=>el.classList.remove('active'));
+  const map={retoque:0,inst:1,resumen:2,comp:3,historial:4};
   document.querySelectorAll('.tab')[map[t]].classList.add('active');
   document.getElementById('sec-'+t).classList.add('active');
-  if (t === 'resumen') updateResumen();
-  if (t === 'comp') renderComparativo();
+  if(t==='resumen')updateResumen();
+  if(t==='comp')renderComp();
+  if(t==='historial')cargarHistorial();
 }
 
-function calcR(r) {
-  const sub = r.dias * r.tarifa;
-  return { sub, extras: r.extras, total: sub + r.extras };
+// ── CALC ─────────────────────────────────────────────────────
+function calcR(r){const sub=r.dias*r.tarifa;const extra=r.horas*r.tarifaHora;return{sub,extra,total:sub+extra};}
+function calcI(r){
+  const saldo=Math.max(0,r.valorProyecto-r.yaPagado);
+  const pagoSemana=Math.min(saldo,r.valorProyecto*(r.porcentaje/100));
+  const saldoRestante=Math.max(0,saldo-pagoSemana);
+  const pctYa=r.valorProyecto>0?(r.yaPagado/r.valorProyecto)*100:0;
+  const pctSemana=r.valorProyecto>0?(pagoSemana/r.valorProyecto)*100:0;
+  return{saldo,pagoSemana,saldoRestante,pctYa,pctSemana,pctRestante:Math.max(0,100-pctYa-pctSemana)};
+}
+function totales(){
+  const tR=retoqueData.reduce((a,r)=>a+calcR(r).total,0);
+  const tI=instData.reduce((a,r)=>a+calcI(r).pagoSemana,0);
+  return{tR,tI,total:tR+tI,empCount:retoqueData.length+instData.length};
 }
 
-function calcI(r) {
-  const sub = r.tratos * r.tarifa;
-  return { sub, anticipo: r.anticipo, descuento: r.descuento, pagar: Math.max(0, sub - r.anticipo - r.descuento) };
-}
-
-function totales() {
-  const tR = retoqueData.reduce((a,r) => a + calcR(r).total, 0);
-  const tI = instData.reduce((a,r) => a + calcI(r).pagar, 0);
-  const tDesc = instData.reduce((a,r) => a + r.anticipo + r.descuento, 0);
-  const tExtras = retoqueData.reduce((a,r) => a + r.extras, 0);
-  return { tR, tI, tDesc, tExtras, total: tR + tI, empCount: retoqueData.length + instData.length };
-}
-
-function addRetoque() {
-  retoqueData.push({ id: Date.now(), nombre:'', dias:0, tarifa:0, extras:0 });
-  renderRetoque();
-}
-
-function renderRetoque() {
-  document.getElementById('retoque-rows').innerHTML = retoqueData.map((r,i) => {
-    const c = calcR(r);
-    return `<div class="emp-block">
+// ── RETOQUE ──────────────────────────────────────────────────
+function addRetoque(){retoqueData.push({id:Date.now(),nombre:'',dias:0,tarifa:0,horas:0,tarifaHora:0});renderRetoque();}
+function renderRetoque(){
+  document.getElementById('retoque-rows').innerHTML=retoqueData.map((r,i)=>{
+    const c=calcR(r);
+    return`<div class="emp-block">
       <div class="emp-header">
-        <input class="emp-name" type="text" value="${r.nombre}" placeholder="Nombre del empleado" oninput="retoqueData[${i}].nombre=this.value;updateTablaRetoque()">
+        <input class="emp-name" type="text" value="${r.nombre}" placeholder="Nombre del retocador" oninput="retoqueData[${i}].nombre=this.value;updateTablaRetoque()">
         <button class="btn btn-del" onclick="retoqueData.splice(${i},1);renderRetoque()">✕</button>
       </div>
-      <div class="fields f4">
+      <p class="sub-label">Pago base</p>
+      <div class="fields f3">
         <div class="field"><label>Días trabajados</label><input type="number" min="0" max="7" step="1" value="${r.dias}" oninput="retoqueData[${i}].dias=+this.value;renderRetoque()"></div>
         <div class="field"><label>Q por día</label><input type="number" min="0" step="1" value="${r.tarifa}" oninput="retoqueData[${i}].tarifa=+this.value;renderRetoque()"></div>
-        <div class="field"><label>Extras (Q)</label><input type="number" min="0" step="1" value="${r.extras}" placeholder="0" oninput="retoqueData[${i}].extras=+this.value;renderRetoque()"></div>
-        <div class="field"><label>Total a pagar</label><div class="field-display">${fmt(c.total)}</div></div>
+        <div class="field"><label>Subtotal días</label><div class="field-display">${fmt(c.sub)}</div></div>
+      </div>
+      <hr class="divider">
+      <p class="sub-label">Horas extra</p>
+      <div class="fields f3">
+        <div class="field"><label>Horas extra</label><input type="number" min="0" step="0.5" value="${r.horas}" placeholder="0" oninput="retoqueData[${i}].horas=+this.value;renderRetoque()"></div>
+        <div class="field"><label>Q por hora</label><input type="number" min="0" step="1" value="${r.tarifaHora}" placeholder="0" oninput="retoqueData[${i}].tarifaHora=+this.value;renderRetoque()"></div>
+        <div class="field"><label>Subtotal extras</label><div class="field-display text-green">${fmt(c.extra)}</div></div>
+      </div>
+      <div class="emp-footer">
+        <span class="emp-footer-label">Total a pagar:</span>
+        <span class="emp-footer-val">${fmt(c.total)}</span>
       </div>
     </div>`;
   }).join('');
   updateTablaRetoque();
 }
-
-function updateTablaRetoque() {
-  const tbody = document.getElementById('tbody-retoque');
-  if (!retoqueData.length) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">Agrega empleados arriba</div></td></tr>'; return; }
-  let tB=0, tE=0, tF=0;
-  tbody.innerHTML = retoqueData.map(r => {
-    const c = calcR(r); tB+=c.sub; tE+=c.extras; tF+=c.total;
-    return `<tr><td>${r.nombre||'—'}</td><td>${r.dias}</td><td>${fmt(r.tarifa)}</td><td>${fmt(c.sub)}</td><td class="text-green">+${fmt(c.extras)}</td><td>${fmt(c.total)}</td></tr>`;
-  }).join('') + `<tr class="tfoot"><td colspan="3">Total retoque</td><td>${fmt(tB)}</td><td>+${fmt(tE)}</td><td>${fmt(tF)}</td></tr>`;
+function updateTablaRetoque(){
+  const tbody=document.getElementById('tbody-retoque');
+  if(!retoqueData.length){tbody.innerHTML='<tr><td colspan="8"><div class="empty">Agrega retocadores arriba</div></td></tr>';return;}
+  let tS=0,tE=0,tT=0;
+  tbody.innerHTML=retoqueData.map(r=>{const c=calcR(r);tS+=c.sub;tE+=c.extra;tT+=c.total;
+    return`<tr><td>${r.nombre||'—'}</td><td>${r.dias}</td><td>${fmt(r.tarifa)}</td><td>${fmt(c.sub)}</td><td>${r.horas}</td><td>${fmt(r.tarifaHora)}</td><td class="text-green">+${fmt(c.extra)}</td><td>${fmt(c.total)}</td></tr>`;
+  }).join('')+`<tr class="tfoot"><td colspan="3">Total retoque</td><td>${fmt(tS)}</td><td colspan="2"></td><td>+${fmt(tE)}</td><td>${fmt(tT)}</td></tr>`;
 }
 
-function addInst() {
-  instData.push({ id: Date.now(), nombre:'', tratos:0, tarifa:0, anticipo:0, descuento:0 });
-  renderInst();
-}
-
-function renderInst() {
-  document.getElementById('inst-rows').innerHTML = instData.map((r,i) => {
-    const c = calcI(r);
-    return `<div class="emp-block">
-      <div class="emp-header">
-        <input class="emp-name" type="text" value="${r.nombre}" placeholder="Nombre del instalador" oninput="instData[${i}].nombre=this.value;updateTablaInst()">
-        <button class="btn btn-del" onclick="instData.splice(${i},1);renderInst()">✕</button>
+// ── INSTALADORES ─────────────────────────────────────────────
+function addInst(){instData.push({id:Date.now(),nombre:'',proyecto:'',valorProyecto:0,yaPagado:0,porcentaje:0});renderInst();}
+function renderInst(){
+  document.getElementById('inst-rows').innerHTML=instData.map((r,i)=>{
+    const c=calcI(r);
+    const wYa=Math.min(100,c.pctYa);
+    const wSem=Math.min(100-wYa,c.pctSemana);
+    let saldoClass='ok';
+    if(c.saldo<=0)saldoClass='over';
+    else if(c.saldo<r.valorProyecto*0.2)saldoClass='warn';
+    return`<div class="emp-block">
+      <div class="inst-header">
+        <div class="inst-header-left">
+          <div class="inst-name-row">
+            <input class="emp-name" type="text" value="${r.nombre}" placeholder="Nombre del instalador" oninput="instData[${i}].nombre=this.value;updateTablaInst()">
+            <button class="btn btn-del" onclick="instData.splice(${i},1);renderInst()">✕</button>
+          </div>
+          <div class="inst-meta">
+            <div class="inst-meta-item">
+              <span class="inst-meta-label">Proyecto:</span>
+              <input class="inst-meta-input proyecto" type="text" value="${r.proyecto}" placeholder="Nombre del proyecto" oninput="instData[${i}].proyecto=this.value;updateTablaInst()">
+            </div>
+            <div class="inst-meta-item">
+              <span class="inst-meta-label">Valor total (Q):</span>
+              <input class="inst-meta-input" type="number" min="0" step="1" value="${r.valorProyecto}" oninput="instData[${i}].valorProyecto=+this.value;renderInst()">
+            </div>
+          </div>
+        </div>
       </div>
+      <hr class="divider">
+      <p class="sub-label">Pago esta semana</p>
       <div class="fields f4">
-        <div class="field"><label>Tratos completados</label><input type="number" min="0" step="1" value="${r.tratos}" oninput="instData[${i}].tratos=+this.value;renderInst()"></div>
-        <div class="field"><label>Q por trato</label><input type="number" min="0" step="1" value="${r.tarifa}" oninput="instData[${i}].tarifa=+this.value;renderInst()"></div>
-        <div class="field"><label>Anticipo (Q)</label><input type="number" min="0" step="1" value="${r.anticipo}" placeholder="0" oninput="instData[${i}].anticipo=+this.value;renderInst()"></div>
-        <div class="field"><label>Descuento (Q)</label><input type="number" min="0" step="1" value="${r.descuento}" placeholder="0" oninput="instData[${i}].descuento=+this.value;renderInst()"></div>
+        <div class="field"><label>Ya pagado (Q)</label><input type="number" min="0" step="1" value="${r.yaPagado}" placeholder="0" oninput="instData[${i}].yaPagado=+this.value;renderInst()"></div>
+        <div class="field"><label>Saldo disponible</label><div class="field-display ${saldoClass}">${fmt(c.saldo)}</div></div>
+        <div class="field"><label>% a pagar esta semana</label><input type="number" min="0" max="100" step="1" value="${r.porcentaje}" placeholder="0" oninput="instData[${i}].porcentaje=+this.value;renderInst()"></div>
+        <div class="field"><label>Pago esta semana</label><div class="field-display ${c.pagoSemana>0?'ok':''}">${fmt(c.pagoSemana)}</div></div>
       </div>
-      <div class="emp-footer">
-        <span class="emp-footer-label">Subtotal:</span><span class="emp-footer-val mono">${fmt(c.sub)}</span>
-        ${c.anticipo>0||c.descuento>0 ? `<span class="emp-footer-label text-red">− ${fmt(c.anticipo+c.descuento)}</span>` : ''}
-        <span class="emp-footer-label">A pagar:</span><span class="emp-footer-val mono">${fmt(c.pagar)}</span>
+      <div class="avance-wrap">
+        <div class="avance-title">Avance de pago del proyecto</div>
+        <div class="avance-bar-row">
+          <span class="avance-bar-label">Distribución</span>
+          <div class="avance-track">
+            <div style="display:flex;height:100%;width:100%;">
+              ${wYa>0?`<div style="width:${wYa}%;background:#378ADD;display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:700;color:#fff;">${wYa>=8?pct(c.pctYa):''}</span></div>`:''}
+              ${wSem>0?`<div style="width:${wSem}%;background:#1D9E75;display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:700;color:#fff;">${wSem>=8?pct(c.pctSemana):''}</span></div>`:''}
+              <div style="flex:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;"><span style="font-size:10px;font-weight:600;color:var(--text2);">${c.pctRestante>8?pct(c.pctRestante):''}</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="avance-legend">
+          <div class="avance-legend-item"><div class="avance-dot" style="background:#378ADD;"></div><span>Ya pagado: <strong>${fmt(r.yaPagado)}</strong></span></div>
+          <div class="avance-legend-item"><div class="avance-dot" style="background:#1D9E75;"></div><span>Esta semana: <strong>${fmt(c.pagoSemana)}</strong></span></div>
+          <div class="avance-legend-item"><div class="avance-dot" style="background:var(--surface2);border:1px solid var(--border);"></div><span>Saldo restante: <strong>${fmt(c.saldoRestante)}</strong></span></div>
+        </div>
       </div>
     </div>`;
   }).join('');
   updateTablaInst();
 }
-
-function updateTablaInst() {
-  const tbody = document.getElementById('tbody-inst');
-  if (!instData.length) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">Agrega instaladores arriba</div></td></tr>'; return; }
-  let tS=0, tA=0, tD=0, tP=0;
-  tbody.innerHTML = instData.map(r => {
-    const c = calcI(r); tS+=c.sub; tA+=c.anticipo; tD+=c.descuento; tP+=c.pagar;
-    return `<tr><td>${r.nombre||'—'}</td><td>${r.tratos}</td><td>${fmt(r.tarifa)}</td><td>${fmt(c.sub)}</td><td class="text-red">${c.anticipo>0?fmt(c.anticipo):'—'}</td><td class="text-red">${c.descuento>0?fmt(c.descuento):'—'}</td><td>${fmt(c.pagar)}</td></tr>`;
-  }).join('') + `<tr class="tfoot"><td colspan="3">Total instaladores</td><td>${fmt(tS)}</td><td>${fmt(tA)}</td><td>${fmt(tD)}</td><td>${fmt(tP)}</td></tr>`;
+function updateTablaInst(){
+  const tbody=document.getElementById('tbody-inst');
+  if(!instData.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty">Agrega instaladores arriba</div></td></tr>';return;}
+  let tYap=0,tPago=0;
+  tbody.innerHTML=instData.map(r=>{const c=calcI(r);tYap+=r.yaPagado;tPago+=c.pagoSemana;
+    const srClass=c.saldoRestante<r.valorProyecto*0.1?'text-red':c.saldoRestante<r.valorProyecto*0.3?'text-orange':'';
+    return`<tr><td>${r.nombre||'—'}</td><td>${r.proyecto||'—'}</td><td>${fmt(r.yaPagado)}</td><td>${fmt(c.saldo)}</td><td>${r.porcentaje}%</td><td>${fmt(c.pagoSemana)}</td><td class="${srClass}">${fmt(c.saldoRestante)}</td></tr>`;
+  }).join('')+`<tr class="tfoot"><td colspan="2">Totales</td><td>${fmt(tYap)}</td><td></td><td></td><td>${fmt(tPago)}</td><td></td></tr>`;
 }
 
-function updateResumen() {
-  const t = totales();
-  document.getElementById('m-retoque').textContent = fmt(t.tR);
-  document.getElementById('m-inst').textContent = fmt(t.tI);
-  document.getElementById('m-desc').textContent = fmt(t.tDesc);
-  document.getElementById('m-total').textContent = fmt(t.total);
-  document.getElementById('m-emp').textContent = t.empCount;
-  const tbody = document.getElementById('tbody-full');
-  const rows = [
-    ...retoqueData.map(r => { const c=calcR(r); return `<tr><td>${r.nombre||'—'}</td><td><span class="badge badge-r">Retoque</span></td><td>${fmt(c.sub)}</td><td class="text-green">${c.extras>0?'+'+fmt(c.extras)+' extras':'—'}</td><td>${fmt(c.total)}</td></tr>`; }),
-    ...instData.map(r => { const c=calcI(r); const p=[]; if(c.anticipo>0)p.push('−'+fmt(c.anticipo)+' anticipo'); if(c.descuento>0)p.push('−'+fmt(c.descuento)+' desc.'); return `<tr><td>${r.nombre||'—'}</td><td><span class="badge badge-i">Instalador</span></td><td>${fmt(c.sub)}</td><td class="text-red">${p.length?p.join(', '):'—'}</td><td>${fmt(c.pagar)}</td></tr>`; })
+// ── RESUMEN ───────────────────────────────────────────────────
+function updateResumen(){
+  const t=totales();
+  document.getElementById('m-retoque').textContent=fmt(t.tR);
+  document.getElementById('m-inst').textContent=fmt(t.tI);
+  document.getElementById('m-total').textContent=fmt(t.total);
+  document.getElementById('m-emp').textContent=t.empCount;
+  const tbody=document.getElementById('tbody-full');
+  const rows=[
+    ...retoqueData.map(r=>{const c=calcR(r);return`<tr><td>${r.nombre||'—'}</td><td><span class="badge badge-r">Retoque</span></td><td>${r.dias} días × ${fmt(r.tarifa)}${c.extra>0?' + '+r.horas+'h extra':''}</td><td>${fmt(c.total)}</td></tr>`;}),
+    ...instData.map(r=>{const c=calcI(r);return`<tr><td>${r.nombre||'—'}</td><td><span class="badge badge-i">Instalador</span></td><td>${r.proyecto||'—'} — ${r.porcentaje}% de ${fmt(r.valorProyecto)}</td><td>${fmt(c.pagoSemana)}</td></tr>`;})
   ];
-  tbody.innerHTML = rows.length
-    ? rows.join('') + `<tr class="tfoot"><td colspan="4">Total general a pagar</td><td>${fmt(t.total)}</td></tr>`
-    : '<tr><td colspan="5"><div class="empty-state">Sin datos aún</div></td></tr>';
+  tbody.innerHTML=rows.length?rows.join('')+`<tr class="tfoot"><td colspan="3">Total general a pagar</td><td>${fmt(t.total)}</td></tr>`:'<tr><td colspan="4"><div class="empty">Sin datos aún</div></td></tr>';
 }
 
-function guardarSemana() {
-  const ini = document.getElementById('semana-inicio').value;
-  const fin = document.getElementById('semana-fin').value;
-  const t = totales();
-  semanaAnterior = {
-    semana: ini&&fin ? ini+' al '+fin : 'Semana guardada',
-    tR: t.tR, tI: t.tI, tDesc: t.tDesc, tExtras: t.tExtras, total: t.total, empCount: t.empCount,
-    retoque: retoqueData.map(r => ({ nombre: r.nombre, ...calcR(r) })),
-    inst: instData.map(r => ({ nombre: r.nombre, ...calcI(r) }))
-  };
-  try { localStorage.setItem('planilla_semana_anterior', JSON.stringify(semanaAnterior)); } catch(e) {}
-  alert('✓ Semana guardada. Aparecerá en el Comparativo la próxima semana.');
+// ── GUARDAR EN SHEETS ─────────────────────────────────────────
+async function guardarSemana(){
+  setSyncStatus('saving','Guardando...');
+  const semana=getSemana();
+  const t=totales();
+  const fecha=new Date().toLocaleDateString('es-GT');
+  try{
+    // Hoja Retoque
+    for(const r of retoqueData){
+      const c=calcR(r);
+      await sheetsRequest('APPEND','Retoque!A:I',[
+        [semana,fecha,r.nombre||'—',r.dias,r.tarifa,c.sub,r.horas,r.tarifaHora,c.total]
+      ]);
+    }
+    // Hoja Instaladores
+    for(const r of instData){
+      const c=calcI(r);
+      await sheetsRequest('APPEND','Instaladores!A:I',[
+        [semana,fecha,r.nombre||'—',r.proyecto||'—',r.valorProyecto,r.yaPagado,r.porcentaje,c.pagoSemana,c.saldoRestante]
+      ]);
+    }
+    // Hoja Resumen
+    await sheetsRequest('APPEND','Resumen!A:F',[
+      [semana,fecha,t.tR,t.tI,t.total,t.empCount]
+    ]);
+    // guardar localmente para comparativo
+    semanaAnterior={semana,tR:t.tR,tI:t.tI,total:t.total,empCount:t.empCount};
+    try{localStorage.setItem('planilla_v8_anterior',JSON.stringify(semanaAnterior));}catch(e){}
+    setSyncStatus('ok','Guardado en Google Sheets ✓');
+    setTimeout(()=>setSyncStatus('ok','Listo'),3000);
+  }catch(err){
+    setSyncStatus('error','Error al guardar: '+err.message);
+    console.error(err);
+  }
 }
 
-function exportarExcel() {
-  const ini = document.getElementById('semana-inicio').value || '';
-  const fin = document.getElementById('semana-fin').value || '';
-  const semana = ini&&fin ? ini+' al '+fin : 'Semana';
-  const wb = XLSX.utils.book_new();
-
-  // Hoja Retoque
-  const rRows = [['PERSONAL DE RETOQUE — '+semana],[''],
-    ['Nombre','Días trabajados','Tarifa por día (Q)','Subtotal (Q)','Extras (Q)','Total a pagar (Q)']];
-  let tRs=0, tRe=0, tRt=0;
-  retoqueData.forEach(r => {
-    const c = calcR(r); tRs+=c.sub; tRe+=c.extras; tRt+=c.total;
-    rRows.push([r.nombre||'—', r.dias, r.tarifa, c.sub, c.extras, c.total]);
-  });
-  rRows.push(['','','TOTAL', tRs, tRe, tRt]);
-  const wsR = XLSX.utils.aoa_to_sheet(rRows);
-  wsR['!cols'] = [{wch:24},{wch:16},{wch:18},{wch:14},{wch:12},{wch:16}];
-  XLSX.utils.book_append_sheet(wb, wsR, 'Retoque');
-
-  // Hoja Instaladores
-  const iRows = [['INSTALADORES — '+semana],[''],
-    ['Nombre','Tratos completados','Q por trato','Subtotal (Q)','Anticipo (Q)','Descuento (Q)','A pagar (Q)']];
-  let tIS=0, tIA=0, tID=0, tIP=0;
-  instData.forEach(r => {
-    const c = calcI(r); tIS+=c.sub; tIA+=c.anticipo; tID+=c.descuento; tIP+=c.pagar;
-    iRows.push([r.nombre||'—', r.tratos, r.tarifa, c.sub, c.anticipo, c.descuento, c.pagar]);
-  });
-  iRows.push(['','','TOTAL', tIS, tIA, tID, tIP]);
-  const wsI = XLSX.utils.aoa_to_sheet(iRows);
-  wsI['!cols'] = [{wch:24},{wch:18},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14}];
-  XLSX.utils.book_append_sheet(wb, wsI, 'Instaladores');
-
-  // Hoja Resumen
-  const t = totales();
-  const resRows = [['RESUMEN SEMANAL'],['Semana: '+semana],[''],
-    ['Categoría','Monto (Q)'],
-    ['Total retoque', t.tR],
-    ['Extras retoque', t.tExtras],
-    ['Total instaladores (bruto)', instData.reduce((a,r)=>a+calcI(r).sub,0)],
-    ['Anticipos y descuentos', t.tDesc],
-    ['Total instaladores (neto)', t.tI],
-    [''],
-    ['TOTAL PLANILLA A PAGAR', t.total],
-    [''],
-    ['Total empleados', t.empCount],
-    ['  Personal retoque', retoqueData.length],
-    ['  Instaladores', instData.length]
-  ];
-  const wsRes = XLSX.utils.aoa_to_sheet(resRows);
-  wsRes['!cols'] = [{wch:30},{wch:18}];
-  XLSX.utils.book_append_sheet(wb, wsRes, 'Resumen');
-
-  XLSX.writeFile(wb, 'planilla_'+(semana.replace(/ /g,'_').replace(/\//g,'-'))+'.xlsx');
+// ── HISTORIAL ─────────────────────────────────────────────────
+async function cargarHistorial(){
+  const lista=document.getElementById('historial-list');
+  lista.innerHTML='<div class="empty">Cargando...</div>';
+  setSyncStatus('saving','Cargando historial...');
+  try{
+    const data=await sheetsRequest('GET','Resumen!A:F');
+    const rows=data.values||[];
+    if(rows.length<=1){lista.innerHTML='<div class="empty">No hay semanas guardadas aún.</div>';setSyncStatus('ok','Listo');return;}
+    // skip header if exists
+    const items=rows.filter(r=>r[0]&&r[0]!=='Semana').reverse();
+    lista.innerHTML=items.map((r,i)=>`
+      <div class="historial-row" onclick="verDetalleSemana('${r[0]}')">
+        <div>
+          <div class="historial-semana">${r[0]||'—'}</div>
+          <div class="historial-fecha">Guardado: ${r[1]||'—'} · ${r[5]||0} empleados</div>
+        </div>
+        <div class="historial-totales">
+          <span>Retoque: ${fmt(+r[2]||0)}</span>
+          <span>Inst: ${fmt(+r[3]||0)}</span>
+          <span style="font-weight:700">Total: ${fmt(+r[4]||0)}</span>
+        </div>
+      </div>`).join('');
+    setSyncStatus('ok','Listo');
+  }catch(err){
+    lista.innerHTML='<div class="empty">Error al cargar historial.</div>';
+    setSyncStatus('error','Error: '+err.message);
+  }
 }
 
-function exportarTxt() {
-  const ini = document.getElementById('semana-inicio').value;
-  const fin = document.getElementById('semana-fin').value;
-  const t = totales();
-  let txt = `PLANILLA SEMANAL\nSemana: ${ini} al ${fin}\n\n=== RETOQUE ===\n`;
-  retoqueData.forEach(r => { const c=calcR(r); txt+=`${r.nombre||'—'}: ${r.dias} días × Q${q(r.tarifa)}${c.extras>0?' + extras Q'+q(c.extras):''} → Q${q(c.total)}\n`; });
-  txt += `Subtotal retoque: Q${q(t.tR)}\n\n=== INSTALADORES ===\n`;
-  instData.forEach(r => { const c=calcI(r); let l=`${r.nombre||'—'}: ${r.tratos} tratos × Q${q(r.tarifa)}`; if(c.anticipo>0)l+=` − anticipo Q${q(c.anticipo)}`; if(c.descuento>0)l+=` − desc. Q${q(c.descuento)}`; txt+=l+` → Q${q(c.pagar)}\n`; });
-  txt += `Subtotal instaladores: Q${q(t.tI)}\n\nTOTAL PLANILLA: Q${q(t.total)}`;
-  const blob = new Blob([txt],{type:'text/plain'});
-  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`planilla_${(ini||'semana').replace(/\//g,'-')}.txt`; a.click();
+async function verDetalleSemana(semana){
+  const det=document.getElementById('historial-detalle');
+  det.innerHTML='<div class="card"><div class="empty">Cargando detalle...</div></div>';
+  try{
+    const [retData,instDataH]=await Promise.all([
+      sheetsRequest('GET','Retoque!A:I'),
+      sheetsRequest('GET','Instaladores!A:I')
+    ]);
+    const retRows=(retData.values||[]).filter(r=>r[0]===semana);
+    const instRows=(instDataH.values||[]).filter(r=>r[0]===semana);
+    det.innerHTML=`<div class="card">
+      <div class="card-title">Detalle: ${semana}</div>
+      <p class="sub-label" style="margin-bottom:8px">Retoque</p>
+      <table><thead><tr><th>Nombre</th><th>Días</th><th>Q/día</th><th>Subtotal</th><th>Hs. extra</th><th>Q/hora</th><th>Extra</th><th>Total</th></tr></thead>
+      <tbody>${retRows.length?retRows.map(r=>`<tr><td>${r[2]}</td><td>${r[3]}</td><td>${fmt(+r[4])}</td><td>${fmt(+r[5])}</td><td>${r[6]}</td><td>${fmt(+r[7])}</td><td>${fmt(+r[8]-+r[5])}</td><td>${fmt(+r[8])}</td></tr>`).join(''):'<tr><td colspan="8"><div class="empty">Sin datos</div></td></tr>'}</tbody></table>
+      <p class="sub-label" style="margin:12px 0 8px">Instaladores</p>
+      <table><thead><tr><th>Nombre</th><th>Proyecto</th><th>Valor proy.</th><th>Ya pagado</th><th>%</th><th>Pago semana</th><th>Saldo rest.</th></tr></thead>
+      <tbody>${instRows.length?instRows.map(r=>`<tr><td>${r[2]}</td><td>${r[3]}</td><td>${fmt(+r[4])}</td><td>${fmt(+r[5])}</td><td>${r[6]}%</td><td>${fmt(+r[7])}</td><td>${fmt(+r[8])}</td></tr>`).join(''):'<tr><td colspan="7"><div class="empty">Sin datos</div></td></tr>'}</tbody></table>
+    </div>`;
+  }catch(err){det.innerHTML='<div class="card"><div class="empty">Error al cargar detalle.</div></div>';}
 }
 
-function deltaChip(a, ant) {
-  if (!ant || ant===0) return '';
-  const d=a-ant, p=Math.round((d/ant)*100);
-  if (d===0) return `<span class="delta delta-flat">= igual</span>`;
-  return d>0 ? `<span class="delta delta-up">▲ ${p}%</span>` : `<span class="delta delta-down">▼ ${Math.abs(p)}%</span>`;
+// ── EXCEL ─────────────────────────────────────────────────────
+function exportarExcelRetoque(){
+  const semana=getSemana();
+  const wb=XLSX.utils.book_new();
+  const rows=[['PLANILLA RETOCADORES — '+semana],[''],['Nombre','Días','Q/día','Subtotal días','Horas extra','Q/hora','Subtotal extras','Total']];
+  let tS=0,tE=0,tT=0;
+  retoqueData.forEach(r=>{const c=calcR(r);tS+=c.sub;tE+=c.extra;tT+=c.total;rows.push([r.nombre||'—',r.dias,r.tarifa,c.sub,r.horas,r.tarifaHora,c.extra,c.total]);});
+  rows.push(['','','TOTAL',tS,'','',tE,tT]);
+  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:22},{wch:8},{wch:10},{wch:14},{wch:12},{wch:10},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws,'Retocadores');
+  XLSX.writeFile(wb,'retocadores_'+(semana.replace(/ /g,'_').replace(/\//g,'-'))+'.xlsx');
+}
+function exportarExcelInstaladores(){
+  const semana=getSemana();
+  const wb=XLSX.utils.book_new();
+  const rows=[['PLANILLA INSTALADORES — '+semana],[''],['Nombre','Proyecto','Ya pagado','Saldo','% semana','Pago semana','Saldo restante']];
+  let tYap=0,tPago=0;
+  instData.forEach(r=>{const c=calcI(r);tYap+=r.yaPagado;tPago+=c.pagoSemana;rows.push([r.nombre||'—',r.proyecto||'—',r.yaPagado,c.saldo,r.porcentaje/100,c.pagoSemana,c.saldoRestante]);});
+  rows.push(['','TOTAL',tYap,'','',tPago,'']);
+  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:22},{wch:24},{wch:14},{wch:14},{wch:12},{wch:14},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws,'Instaladores');
+  XLSX.writeFile(wb,'instaladores_'+(semana.replace(/ /g,'_').replace(/\//g,'-'))+'.xlsx');
+}
+function exportarTxt(){
+  const semana=getSemana();const t=totales();
+  let txt=`PLANILLA SEMANAL\nSemana: ${semana}\n\n=== RETOQUE ===\n`;
+  retoqueData.forEach(r=>{const c=calcR(r);txt+=`${r.nombre||'—'}: ${r.dias} días × Q${q(r.tarifa)}${c.extra>0?' + '+r.horas+'h extra × Q'+q(r.tarifaHora):''} → Q${q(c.total)}\n`;});
+  txt+=`Subtotal retoque: Q${q(t.tR)}\n\n=== INSTALADORES ===\n`;
+  instData.forEach(r=>{const c=calcI(r);txt+=`${r.nombre||'—'} (${r.proyecto||'—'}): ${r.porcentaje}% → Q${q(c.pagoSemana)} | Saldo: Q${q(c.saldoRestante)}\n`;});
+  txt+=`Subtotal instaladores: Q${q(t.tI)}\n\nTOTAL: Q${q(t.total)}`;
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`planilla_${semana.replace(/ /g,'_').replace(/\//g,'-')}.txt`;a.click();
 }
 
-function barPair(label, vA, vAnt) {
-  const max=Math.max(vA,vAnt,1), pA=Math.round((vA/max)*100), pAnt=Math.round((vAnt/max)*100);
-  return `<div class="bar-wrap">
-    <div class="bar-title">${label}</div>
-    <div class="bar-row"><div class="bar-meta"><span style="color:var(--green)">Esta semana</span><span>${fmt(vA)}</span></div><div class="bar-track"><div class="bar-fill bar-actual" style="width:${pA}%"></div></div></div>
-    <div class="bar-row" style="margin-top:6px"><div class="bar-meta"><span style="color:var(--blue)">Semana anterior</span><span>${fmt(vAnt)}</span></div><div class="bar-track"><div class="bar-fill bar-anterior" style="width:${pAnt}%"></div></div></div>
+// ── COMPARATIVO ───────────────────────────────────────────────
+function deltaChip(a,ant){
+  if(!ant||ant===0)return'';
+  const d=a-ant,p=Math.round((d/ant)*100);
+  if(d===0)return`<span class="delta delta-flat">= igual</span>`;
+  return d>0?`<span class="delta delta-up">▲ ${p}%</span>`:`<span class="delta delta-down">▼ ${Math.abs(p)}%</span>`;
+}
+function barPair(label,vA,vAnt){
+  const max=Math.max(vA,vAnt,1),pA=Math.round((vA/max)*100),pAnt=Math.round((vAnt/max)*100);
+  return`<div class="bar-wrap"><div class="bar-title">${label}</div>
+    <div class="bar-row"><div class="bar-meta"><span style="color:var(--green)">Esta semana</span><span>${fmt(vA)}</span></div><div class="bar-track"><div class="bar-fill-cmp bar-actual" style="width:${pA}%"></div></div></div>
+    <div class="bar-row" style="margin-top:5px"><div class="bar-meta"><span style="color:var(--blue)">Semana anterior</span><span>${fmt(vAnt)}</span></div><div class="bar-track"><div class="bar-fill-cmp bar-anterior" style="width:${pAnt}%"></div></div></div>
   </div>`;
 }
-
-function renderComparativo() {
-  const cont = document.getElementById('comp-content');
-  const ini = document.getElementById('semana-inicio').value;
-  const fin = document.getElementById('semana-fin').value;
-  const semActual = ini&&fin ? ini+' al '+fin : 'Semana actual';
-  const t = totales();
-
-  if (!semanaAnterior) {
-    cont.innerHTML = `<div class="card"><div class="empty-state">
-      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      Aún no hay semana anterior guardada.<br>Completa la planilla y presiona <strong>"Guardar semana actual"</strong> en el Resumen.
-    </div></div>`;
-    return;
-  }
-
-  const ant = semanaAnterior;
-  cont.innerHTML = `
+function renderComp(){
+  const cont=document.getElementById('comp-content');
+  const semActual=getSemana();const t=totales();
+  if(!semanaAnterior){cont.innerHTML=`<div class="card"><div class="empty">Aún no hay semana anterior guardada.<br>Guarda la semana actual desde el Resumen y aparecerá aquí la próxima semana.</div></div>`;return;}
+  const ant=semanaAnterior;
+  cont.innerHTML=`
     <div class="cmp-grid">
-      <div class="cmp-card highlight">
-        <div class="cmp-week-label">Esta semana</div>
-        <div class="cmp-week-title">${semActual}</div>
-        <div class="cmp-row"><span class="cmp-row-label">Retoque</span><span class="cmp-row-val">${fmt(t.tR)}</span></div>
-        <div class="cmp-row"><span class="cmp-row-label">Instaladores</span><span class="cmp-row-val">${fmt(t.tI)}</span></div>
-        <div class="cmp-row"><span class="cmp-row-label">Extras</span><span class="cmp-row-val text-green">+${fmt(t.tExtras)}</span></div>
-        <div class="cmp-row"><span class="cmp-row-label">Desc./anticipos</span><span class="cmp-row-val text-red">−${fmt(t.tDesc)}</span></div>
-        <div class="cmp-row"><span class="cmp-row-label">Empleados</span><span class="cmp-row-val">${t.empCount}</span></div>
-        <div class="cmp-row"><span class="cmp-row-label">Total a pagar</span><span class="cmp-row-val">${fmt(t.total)}</span></div>
+      <div class="cmp-card hl">
+        <div class="cmp-week-label">Esta semana</div><div class="cmp-week-title">${semActual}</div>
+        <div class="cmp-row"><span>Retoque</span><span class="cmp-row-val">${fmt(t.tR)}</span></div>
+        <div class="cmp-row"><span>Instaladores</span><span class="cmp-row-val">${fmt(t.tI)}</span></div>
+        <div class="cmp-row"><span>Empleados</span><span class="cmp-row-val">${t.empCount}</span></div>
+        <div class="cmp-row"><span>Total a pagar</span><span class="cmp-row-val">${fmt(t.total)}</span></div>
       </div>
       <div class="cmp-card">
-        <div class="cmp-week-label">Semana anterior</div>
-        <div class="cmp-week-title">${ant.semana}</div>
-        <div class="cmp-row"><span class="cmp-row-label">Retoque</span><span class="cmp-row-val">${fmt(ant.tR)}</span></div>
-        <div class="cmp-row"><span class="cmp-row-label">Instaladores</span><span class="cmp-row-val">${fmt(ant.tI)}</span></div>
-        <div class="cmp-row"><span class="cmp-row-label">Extras</span><span class="cmp-row-val text-green">+${fmt(ant.tExtras)}</span></div>
-        <div class="cmp-row"><span class="cmp-row-label">Desc./anticipos</span><span class="cmp-row-val text-red">−${fmt(ant.tDesc)}</span></div>
-        <div class="cmp-row"><span class="cmp-row-label">Empleados</span><span class="cmp-row-val">${ant.empCount}</span></div>
-        <div class="cmp-row"><span class="cmp-row-label">Total a pagar</span><span class="cmp-row-val">${fmt(ant.total)}</span></div>
+        <div class="cmp-week-label">Semana anterior</div><div class="cmp-week-title">${ant.semana}</div>
+        <div class="cmp-row"><span>Retoque</span><span class="cmp-row-val">${fmt(ant.tR)}</span></div>
+        <div class="cmp-row"><span>Instaladores</span><span class="cmp-row-val">${fmt(ant.tI)}</span></div>
+        <div class="cmp-row"><span>Empleados</span><span class="cmp-row-val">${ant.empCount}</span></div>
+        <div class="cmp-row"><span>Total a pagar</span><span class="cmp-row-val">${fmt(ant.total)}</span></div>
       </div>
     </div>
     <div class="card">
       <div class="card-title">Variación semana a semana</div>
-      <table>
-        <thead><tr><th>Categoría</th><th>Anterior</th><th>Actual</th><th>Cambio</th></tr></thead>
-        <tbody>
-          <tr><td>Total retoque</td><td>${fmt(ant.tR)}</td><td>${fmt(t.tR)}</td><td>${deltaChip(t.tR,ant.tR)}</td></tr>
-          <tr><td>Total instaladores</td><td>${fmt(ant.tI)}</td><td>${fmt(t.tI)}</td><td>${deltaChip(t.tI,ant.tI)}</td></tr>
-          <tr><td>Extras retoque</td><td>${fmt(ant.tExtras)}</td><td>${fmt(t.tExtras)}</td><td>${deltaChip(t.tExtras,ant.tExtras)}</td></tr>
-          <tr><td>Desc./anticipos</td><td>${fmt(ant.tDesc)}</td><td>${fmt(t.tDesc)}</td><td>${deltaChip(t.tDesc,ant.tDesc)}</td></tr>
-          <tr class="tfoot"><td>Total planilla</td><td>${fmt(ant.total)}</td><td>${fmt(t.total)}</td><td>${deltaChip(t.total,ant.total)}</td></tr>
-        </tbody>
-      </table>
+      <table><thead><tr><th>Categoría</th><th>Anterior</th><th>Actual</th><th>Cambio</th></tr></thead>
+      <tbody>
+        <tr><td>Total retoque</td><td>${fmt(ant.tR)}</td><td>${fmt(t.tR)}</td><td>${deltaChip(t.tR,ant.tR)}</td></tr>
+        <tr><td>Total instaladores</td><td>${fmt(ant.tI)}</td><td>${fmt(t.tI)}</td><td>${deltaChip(t.tI,ant.tI)}</td></tr>
+        <tr class="tfoot"><td>Total planilla</td><td>${fmt(ant.total)}</td><td>${fmt(t.total)}</td><td>${deltaChip(t.total,ant.total)}</td></tr>
+      </tbody></table>
     </div>
     <div class="card">
       <div class="card-title">Barras comparativas</div>
-      ${barPair('Retoque', t.tR, ant.tR)}
-      ${barPair('Instaladores', t.tI, ant.tI)}
-      ${barPair('Total planilla', t.total, ant.total)}
-    </div>
-    <div class="btn-group">
-      <button class="btn btn-excel" onclick="exportarExcelComparativo()">⬇ Descargar comparativo Excel</button>
-      <button class="btn" style="color:var(--red)" onclick="if(confirm('¿Borrar semana anterior guardada?')){semanaAnterior=null;try{localStorage.removeItem('planilla_semana_anterior');}catch(e){}renderComparativo();}">✕ Borrar semana anterior</button>
+      ${barPair('Retoque',t.tR,ant.tR)}
+      ${barPair('Instaladores',t.tI,ant.tI)}
+      ${barPair('Total planilla',t.total,ant.total)}
     </div>`;
 }
 
-function exportarExcelComparativo() {
-  if (!semanaAnterior) { alert('No hay semana anterior guardada.'); return; }
-  const ini = document.getElementById('semana-inicio').value || '';
-  const fin = document.getElementById('semana-fin').value || '';
-  const semActual = ini&&fin ? ini+' al '+fin : 'Semana actual';
-  const t = totales();
-  const ant = semanaAnterior;
-  const wb = XLSX.utils.book_new();
-  const rows = [
-    ['COMPARATIVO SEMANAL'], [''],
-    ['Categoría', 'Sem. anterior ('+ant.semana+')', 'Esta semana ('+semActual+')', 'Diferencia (Q)', 'Cambio (%)'],
-    ['Total retoque', ant.tR, t.tR, +(t.tR-ant.tR).toFixed(2), ant.tR ? +((t.tR-ant.tR)/ant.tR*100).toFixed(1) : 0],
-    ['Extras retoque', ant.tExtras, t.tExtras, +(t.tExtras-ant.tExtras).toFixed(2), ant.tExtras ? +((t.tExtras-ant.tExtras)/ant.tExtras*100).toFixed(1) : 0],
-    ['Total instaladores', ant.tI, t.tI, +(t.tI-ant.tI).toFixed(2), ant.tI ? +((t.tI-ant.tI)/ant.tI*100).toFixed(1) : 0],
-    ['Desc./anticipos', ant.tDesc, t.tDesc, +(t.tDesc-ant.tDesc).toFixed(2), ant.tDesc ? +((t.tDesc-ant.tDesc)/ant.tDesc*100).toFixed(1) : 0],
-    [''],
-    ['TOTAL PLANILLA', ant.total, t.total, +(t.total-ant.total).toFixed(2), ant.total ? +((t.total-ant.total)/ant.total*100).toFixed(1) : 0],
-    [''],
-    ['Total empleados', ant.empCount, t.empCount, '', '']
-  ];
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:30},{wch:24},{wch:24},{wch:16},{wch:12}];
-  XLSX.utils.book_append_sheet(wb, ws, 'Comparativo');
-  XLSX.writeFile(wb, 'comparativo_planilla.xlsx');
-}
+// ── INIT ──────────────────────────────────────────────────────
+setSyncStatus('ok','Listo');
 </script>
 </body>
 </html>
